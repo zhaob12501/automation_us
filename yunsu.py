@@ -8,13 +8,11 @@ Created on 2018/5/5 16:05
 # -*- coding: utf-8 -*-
 
 import hashlib, os, urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, json
-from datetime import *
+from datetime import datetime
 import operator
 import requests
 
-
-with open('settings.json') as f:
-    GLOBAL_DATA = json.load(f) 
+from settings import USER, PASSWD
 
 
 class APIClient(object):
@@ -77,8 +75,8 @@ def upload(typeid=3000):
     paramDict = {}
     result = ''
     while 1:
-        paramDict['username'] = GLOBAL_DATA[3]
-        paramDict['password'] = GLOBAL_DATA[4]
+        paramDict['username'] = USER
+        paramDict['password'] = PASSWD
         paramDict['typeid'] = typeid
         paramDict['timeout'] = 90
         paramDict['softid'] = '72395'
@@ -101,6 +99,8 @@ def upload(typeid=3000):
         result = client.http_upload_image("http://api.ysdm.net/create.xml", paramKeys, paramDict, filebytes)
         result = result.split('<Result>')[1].split('</Result>')[0]
         os.remove('upload.gif')
+        data = {'type': '3', 'num': f'{len(result) * 2.5}'}
+        requests.post("http://www.mobtop.com.cn/index.php?s=/Api/MalaysiaApi/useInterface", data=data)
         return result
 
 if __name__ == '__main__':
