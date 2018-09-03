@@ -13,6 +13,11 @@ class UsPipeline():
             self.con = pool.connection()
             self.cur = self.con.cursor()
 
+    def selZh(self, aid=None):
+        sql = f"SELECT * FROM dc_business_america_info WHERE aid = {aid}"
+        self.cur.execute(sql)
+        return self.cur.fetchone()
+
     @property
     def selDB(self):
         '''查询数据库信息
@@ -22,9 +27,9 @@ class UsPipeline():
                 resWork: dc_business_america_work_eng 表所有信息
         '''
         # 上线使用条件
-        # sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
+        sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
         # 测试使用条件
-        sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 4"
+        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 3"
         self.cur.execute(sql)
         resPublic = self.cur.fetchone()
         if not resPublic:
@@ -45,11 +50,11 @@ class UsPipeline():
         self.cur.execute(sql)
         resWork = self.cur.fetchone()
         if not resWork:
-            raise UsError('work 表无数据') 
+            raise UsError('work 表无数据')  
         
         return (resPublic, resInfo, resWork)
 
-    def upload(self, aid=None, status=None, ques=None, aacode=None):
+    def upload(self, aid=None, **kwargs):
         '''修改数据库接口
 
             参数:
@@ -58,7 +63,7 @@ class UsPipeline():
                 aacode:
         '''
         try:
-            assert aid and (aacode or status or ques)
+            assert aid and kwargs
         except:
             raise UsError('未传 aid 或者 aaCode/status 无值')
 
@@ -75,21 +80,15 @@ class UsPipeline():
             ''' % (aid, aid)
 
         try:
-            if aacode:
-                sql = mSql.format('aacode', aacode)
-                self.cur.execute(sql)   
-            if status:
-                sql = mSql.format('status', status)
-                self.cur.execute(sql)   
-            if ques:
-                sql = mSql.format('ques', ques)
+            for key, val in kwargs.items():
+                sql = mSql.format(key, val)
                 self.cur.execute(sql) 
 
             self.con.commit()
         except Exception as e:
             print('数据库执行出错, 进行回滚...')
             self.con.rollback()
-            raise UsError(f"{e}\n{ques}")
+            raise UsError(f"{e}\n{kwargs.get('ques', 'ques is null')}")
 
     def getData(self):
 

@@ -12,7 +12,7 @@ from datetime import datetime
 import operator
 import requests
 
-from settings import USER, PASSWD
+from settings import USERDB, PASSWD
 
 
 class APIClient(object):
@@ -75,7 +75,7 @@ def upload(typeid=3000):
     paramDict = {}
     result = ''
     while 1:
-        paramDict['username'] = USER
+        paramDict['username'] = USERDB
         paramDict['password'] = PASSWD
         paramDict['typeid'] = typeid
         paramDict['timeout'] = 90
