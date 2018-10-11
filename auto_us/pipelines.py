@@ -52,7 +52,7 @@ class UsPipeline():
         resWork = self.cur.fetchone()
         if not resWork:
             raise UsError('work 表无数据')  
-        
+            
         self.data = (resPublic, resInfo, resWork)
         return 1
 

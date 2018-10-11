@@ -23,3 +23,5 @@ db.ini
 *.pdf
 *.exe
 *.log
+settings.*
+.vscode

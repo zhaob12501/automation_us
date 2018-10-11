@@ -8,7 +8,6 @@
 """
 import re
 
-# import pykeyboard
 import requests
 from lxml import etree
 from PIL import Image
@@ -19,7 +18,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from .settings import (BASEDIR, MON, MONTH, PASSWD, USER,
-                      NC, USERPHOTO, UsError, json, os, sleep, sys, strftime)
+                       NC, USERPHOTO, UsError, json, os, sleep, sys, strftime)
 from .yunsu import upload
 
 
@@ -40,9 +39,9 @@ class Base:
         # self.chrome_options.add_argument('--proxy-server=http://127.0.0.1:1080')
         # 设置浏览器窗口大小
         self.chrome_options.add_argument('window-size=800x3000')
-        download_dir = BASEDIR # for linux/*nix, download_dir="/usr/Public"
-        
-        #----------页面打印版pdf下载-----------------
+        download_dir = os.path.join(BASEDIR, 'usFile') # for linux/*nix, download_dir="/usr/Public"
+    
+                #----------页面打印版pdf下载-----------------
         appState = { 
             "recentDestinations": [ 
             { 
@@ -92,7 +91,6 @@ class Base:
         captcha_top = captcha.location['y'] - top
         captcha_right = captcha.location['x'] + captcha.size['width']
         captcha_bottom = captcha.location['y'] + captcha.size['height'] - top
-        # print(captcha_left, captcha_top, captcha_right, captcha_bottom)
         img = Image.open('captcha.png')
         img = img.crop((captcha_left, captcha_top,
                         captcha_right, captcha_bottom))
@@ -123,10 +121,6 @@ class Base:
         try:
             self.wait.until(EC.presence_of_element_located(locator))
             element = self.driver.find_element(*locator)
-            try:
-                sleep(0.5) if int(text) < 2020 else ""
-            except:
-                pass
             if not text and not element.is_selected():
                 element.click()
             elif text and text != NC:
@@ -143,7 +137,6 @@ class Base:
         except Exception as e:
             raise UsError(f"{e}\n{locator[0]}: {locator[1]}\n" +
                           f"value : {text if text and text != NC else 'None'}\n\n")
-            
         return 0
 
     def choiceSelect(self, selectid=None, value=None, t=0.3):
@@ -197,7 +190,6 @@ class AutoUs(Base):
         self.usPipe = usPipe
         self.allUrl = []
         self.answer = "A"
-        # self.K = pykeyboard.PyKeyboard()
         self.AAcode = "" if not self.resPublic else self.resPublic["aacode"]
 
         self.usUrl = 'https://ceac.state.gov/GenNIV/Default.aspx'
@@ -265,8 +257,7 @@ class AutoUs(Base):
             self.Wait('ctl00_SiteContentPlaceHolder_lnkRetrieve')
 
             if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
-            sleep(0.2)
-
+            sleep(2)
 
         self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_tbxApplicationID",
                   self.resPublic['aacode'])
@@ -421,110 +412,12 @@ class AutoUs(Base):
         for i in errlist[1:]:
             ls.append(self.errDict.get(i, i))
         err = json.dumps(ls).replace('\\', '\\\\')
-        
         if status:
             if self.resPublic["status"] == 2:
                 self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
             elif self.resPublic["conditions"] == 5:
                 self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        else:
-            # self.usPipe.uploadOrder(self.res["id"], )
-            pass
-
-    # 获取验证码
-    # def getCaptcha(self, id=''):
-        # """ 验证码识别
-        #     根据页面验证码元素位置, 截取验证码图片
-        #     发送验证码识别请求,返回验证码文字
-
-        #     Returns: result (str)
-        # """
-        # print("正在识别验证码...")
-        # self.Wait(id, NC)
-
-        # captcha = self.driver.find_element_by_id(id)
-        # self.driver.save_screenshot('captcha.png')
-        # captcha_left = captcha.location['x']
-        # top = 0 if captcha.location['y'] < 1200 else 910
-        # captcha_top = captcha.location['y'] - top
-        # captcha_right = captcha.location['x'] + captcha.size['width']
-        # captcha_bottom = captcha.location['y'] + captcha.size['height'] - top
-        # # print(captcha_left, captcha_top, captcha_right, captcha_bottom)
-        # img = Image.open('captcha.png')
-        # img = img.crop((captcha_left, captcha_top,
-        #                 captcha_right, captcha_bottom))
-        # img.save('code.png')
-        # sleep(0.5)
-        # result = upload()
-        # print(f"验证码为: {result}")
-        # return result
-
-    # 检测元素 / 点击 / 发送字符 / 选择下拉框
-    # def Wait(self, idName=None, text=None, xpath=None, css=None):
-        # """ 设置显性等待, 每 0.3s 检查一次
-        #     Parameter:
-        #         idName, xpath, className: 选择器规则, 默认idName
-        #         text: 需要发送的信息 (非 NC --> 'noClick')
-        # """
-        # try:
-        #     assert idName or xpath or css
-        # except AssertionError:
-        #     raise UsError('未传选择器')
-        # if idName:
-        #     locator = ("id", idName)
-        # elif xpath:
-        #     locator = ("xpath", xpath)
-        # elif css:
-        #     locator = ("css selector", css)
-
-        # try:
-        #     self.wait.until(EC.presence_of_element_located(locator))
-        #     if not text:
-        #         self.driver.find_element(*locator).click()
-        #     elif text != NC:
-        #         try:
-        #             self.driver.find_element(*locator).clear()
-        #         except selenium.common.exceptions.InvalidElementStateException:
-        #             pass
-        #         self.driver.find_element(*locator).send_keys(text)
-        # except Exception as e:
-        #     raise UsError(f"{e}\n{locator[0]}: {locator[1]}\n" +
-        #                   f"value : {text if text and text != NC else 'None'}\n\n")
-
-    # def choiceSelect(self, selectid=None, value=None, t=0.3):
-        # """ 下拉框选择器
-        #     根据 value 选择下拉框
-        # """
-        # try:
-        #     assert selectid and value
-        # except AssertionError:
-        #     raise UsError(
-        #         f'下拉框选择器 ID 和 value 不能为空\nselectid: {selectid}\nvalue   : {value}')
-        # sleep(t)
-        # self.Wait(selectid, text=NC)
-        # try:
-        #     element = Select(self.driver.find_element_by_id(selectid))
-        #     element.select_by_value(value)
-        # except Exception as e:
-        #     raise UsError(f"{e}\nidName: {selectid}\nvalue : {value}\n\n")
-
-        # return 0
-
-    # def waitIdSel(self, idlist=None, selist=None):
-        # """ 对 idlist 进行点击/发送字符串 或对 selist 进行选择
-        #     Returns: 
-        #         [] 空列表
-        # """
-        # if idlist:
-        #     for idName, value in idlist:
-        #         self.Wait(idName, value)
-        # if selist:
-        #     for idName, value in selist:
-        #         self.choiceSelect(idName, value)
-
-        # return []
-
-    # 保存网址, 点击下一步(如有)
+    
     def urlButton(self, button=1):
         if self.driver.current_url not in self.allUrl:
             self.allUrl.append(self.driver.current_url)
@@ -535,7 +428,7 @@ class AutoUs(Base):
         self.driver.execute_script("window.print()")
         sleep(3)
 
-    def renamePdf(self, path=BASEDIR):
+    def renamePdf(self, path=os.path.join(BASEDIR, 'usFile')):
         for infile in os.listdir(path):
             if infile[-3:] != 'pdf':
                 continue  # 过滤掉改名的.py文件
@@ -557,7 +450,7 @@ class AutoUs(Base):
         while i < 3:
             filename = f'''{self.resInfo["username"]}{self.resInfo["date_of_birth"].split("-")[0]}美国%s页_{self.AAcode if self.AAcode else self.resPublic["aacode"]}.pdf''' % dic[i]
             print(os.path.join(BASEDIR, filename))
-            files = {filename: open(os.path.join(BASEDIR, filename), "rb")}
+            files = {filename: open(os.path.join(BASEDIR, 'usFile', filename), "rb")}
             data = {"aid": self.resInfo["aid"], "type": i}
             res = requests.post(url, data=data, files=files)
             print(res.json())
@@ -607,8 +500,8 @@ class AllPage(AutoUs):
             "SignCertify": self.signCertify,
         }
 
-        while  self.getNode and  self.getNode != 'SignCertify':
-            if self.nodeDict[ self.getNode]():
+        while self.getNode and self.getNode != 'SignCertify':
+            if self.nodeDict[self.getNode]():
                 return 1
         self.usPipe.upload(self.resPublic["aid"], visa_status="1")
         return 0
@@ -998,13 +891,6 @@ class AllPage(AutoUs):
         elif self.resPublic['travel_plans_is'] == "Y":
             # 到达美国日期/航班/到达城市/离美日期/航班/离美城市/请提供您在美期间计划访问的地点名称
             plans = json.loads(self.resPublic['plans_info'])
-            """ {
-                "arrive_time":"2018-08-30",
-                "arrive_fly":"JSP",
-                "arrive_city":"Los Angeles",
-                "leave_time":"2018-09-04",
-                "leave_fly":"PSJ",
-                "leave_city":"Los Angeles"} """
             aYear, aMon, aDay = plans["arrive_time"].split('-')
             dYear, dMon, dDay = plans["leave_time"].split('-')
             ids += [
@@ -1486,7 +1372,7 @@ class AllPage(AutoUs):
         else:
             self.Wait("ctl00_SiteContentPlaceHolder_FormView1_cbxSPOUSE_POB_CITY_NA")
         self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlSpousePOBCountry", self.resInfo["spouse_birth_country"])
-        
+
         self.urlButton()
         try:
             errInfos = self.driver.find_element_by_id(
@@ -1501,41 +1387,39 @@ class AllPage(AutoUs):
 
     def prevSpouse(self):
         ''' 离异 '''
-        print("离异人数")
+        print("离异人数", self.resInfo["spouse_former_count"])
         self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxNumberOfPrevSpouses", str(
             self.resInfo["spouse_former_count"]))
         for no, human in enumerate(json.loads(self.resInfo["spouse_former_info"])):
             idName = f"ctl00_SiteContentPlaceHolder_FormView1_DListSpouse_ctl0{no}_"
             if no and self.old_page:
-                self.Wait(f"{idName}InsertButtonSpouse", "")
+                self.driver.find_element_by_id(f"{idName}InsertButtonSpouse").send_keys("")
             year, month, day = human["former_birth_date"].split("-")
             wYear, wMonth, wDay = human["wedding_date"].split("-")
             dYear, dMonth, dDay = human["divorce_date"].split("-")
-            
-            self.Wait(f"{idName}tbxSURNAME", human["former_name"])
-            self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
+            self.driver.find_element_by_id(f"{idName}tbxSURNAME").send_keys(human["former_name"])
+            self.driver.find_element_by_id(f"{idName}tbxGIVEN_NAME").send_keys(human["former_names"])
             try:
                 self.choiceSelect(f"{idName}ddlDOBDay", day)
-                self.Wait(f"{idName}tbxDOBYear", year)
-                self.Wait(f"{idName}ddlDOBMonth", MONTH[month])
-                self.Wait(f"{idName}ddlDomDay", wDay)
-                self.Wait(f"{idName}txtDomYear", wYear)
-                self.Wait(f"{idName}ddlDomMonth", MONTH[wMonth])
-                self.Wait(f"{idName}ddlDomEndDay", dDay)
-                self.Wait(f"{idName}txtDomEndYear", dYear)
-                self.Wait(f"{idName}ddlDomEndMonth", MONTH[dMonth])
+                self.driver.find_element_by_id(f"{idName}tbxDOBYear").send_keys(year)
+                self.driver.find_element_by_id(f"{idName}ddlDOBMonth").send_keys(MONTH[month])
+                self.driver.find_element_by_id(f"{idName}ddlDomDay").send_keys(wDay)
+                self.driver.find_element_by_id(f"{idName}txtDomYear").send_keys(wYear)
+                self.driver.find_element_by_id(f"{idName}ddlDomMonth").send_keys(MONTH[wMonth])
+                self.driver.find_element_by_id(f"{idName}ddlDomEndDay").send_keys(dDay)
+                self.driver.find_element_by_id(f"{idName}txtDomEndYear").send_keys(dYear)
+                self.driver.find_element_by_id(f"{idName}ddlDomEndMonth").send_keys(MONTH[dMonth])
             except:
                 pass
-            self.Wait(f"{idName}tbxHowMarriageEnded", human["divorce_info"])
+            self.driver.find_element_by_id(f"{idName}tbxHowMarriageEnded").send_keys(human["divorce_info"])
             if human["former_city"]:
-                self.Wait(f"{idName}tbxSpousePOBCity", human["former_city"])
+                self.driver.find_element_by_id(f"{idName}tbxSpousePOBCity").send_keys(human["former_city"])
             else:
-                self.Wait(f"{idName}cbxSPOUSE_POB_CITY_NA", "")
-                self.choiceSelect(f"{idName}ddlSpouseNatDropDownList", human["former_country"])
-                self.choiceSelect(f"{idName}ddlSpousePOBCountry", human["former_birth_country"])
-                self.choiceSelect(f"{idName}ddlMarriageEnded_CNTRY", human["divorce_country"])
-            self.Wait(f"{idName}tbxSURNAME", human["former_name"])
-        
+                self.driver.find_element_by_id(f"{idName}cbxSPOUSE_POB_CITY_NA").send_keys("")
+            self.choiceSelect(f"{idName}ddlSpouseNatDropDownList", human["former_country"])
+            self.choiceSelect(f"{idName}ddlSpousePOBCountry", human["former_birth_country"])
+            self.choiceSelect(f"{idName}ddlMarriageEnded_CNTRY", human["divorce_country"])
+            
         self.urlButton()
         try:
             errInfos = self.driver.find_element_by_id(
@@ -2021,11 +1905,6 @@ class AllPage(AutoUs):
         self.urlButton(0)
         self.waitIdSel(ids)
         return 0
-
-    # def confirmPhoto(self):
-        # """ 确认照片页 """
-        # self.urlButton()
-        # return 0
 
     def review(self):
         """ 审查页面 """

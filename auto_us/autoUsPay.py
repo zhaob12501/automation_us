@@ -1,9 +1,11 @@
 import re
 
 import requests
+from PIL import Image
 
 from .autoUS import AutoUs, Select
-from .settings import NC, PASSWD, USER, UsError, json, sleep, strftime, MON, APPDAYS, time
+from .settings import (APPDAYS, MON, NC, PASSWD, USER, UsError, json, sleep,
+                       strftime, time)
 
 
 class AutoPay(AutoUs):
@@ -90,24 +92,16 @@ class AutoPay(AutoUs):
         """ 付款页面 """
         if self.driver.current_url != "https://cgifederal.secure.force.com/applicanthome":
             self.login()
-        # self.Wait(css="#j_id0:SiteTemplate:j_id113:j_id118:j_id119:j_id177 > p > a")
-        # self.Wait(css="#j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58 j_id58 > a:nth-child[2]")
-        # 点击申请新签证
         xp = '//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "新的签证申请")]'
         self.Wait(xpath=xp)
-        # if self.driver.find_element("xpath", xp).text.strip() == "新的签证申请 / 安排面谈时间":
-        #     self.Wait(xpath=xp)
-        # else:
-        #     self.Wait(xpath=xp+"[2]")
-        # 非移民签证
         self.Wait("j_id0:SiteTemplate:theForm:ttip:2")
         for _ in range(5):
             try:
-                # 点击 Disclaimer
                 self.Wait(xpath='/html/body/div[3]/div[3]/div/button/span')
                 break
             except:
-                self.Wait(xpath='//*[@id="j_id0:SiteTemplate:theForm:ttip"]/tbody/tr[3]/td/label')
+                self.Wait(
+                    xpath='//*[@id="j_id0:SiteTemplate:theForm:ttip"]/tbody/tr[3]/td/label')
                 sleep(1)
         # 继续
         self.Wait(xpath='//*[@id="j_id0:SiteTemplate:theForm"]/input[3]')
@@ -233,6 +227,14 @@ class AutoPay(AutoUs):
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1182", province)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1189", zipCode)
 
+        self.driver.save_screenshot("usFile/table.png")
+        table = self.driver.find_element("id", "profileTab")
+        left, top = table.location['x'], table.location['y']
+        right, bottom = left + table.size['width'], top + table.size['height']
+        img = Image.open("usFile/table.png")
+        img.crop((left, top, right, bottom))
+        img.save("usFile/table.png")
+
         self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm"]/input[3]')
         try:
             err = self.driver.find_element_by_css_selector('body > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-resizable').text
@@ -241,8 +243,16 @@ class AutoPay(AutoUs):
             self.usPipe.uploadOrder(self.res["id"], exist_email=err, exist_status=1, interview_status=0)
         except:
             pass
+
         if self.res["exist_status"] in [1, 3]:
             return
+
+        with open("usFile/table.png", 'rb') as f:
+            files = {'file': f.read()}
+
+        url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+        res = requests.post(url, files=files).json()
+        self.usPipe.uploadOrder(self.res['id'], interview_img=res)
 
         if self.resPublic["associate_is"] == "Y" and self.resPublic["associate_tuxedo_is"] == "N":
             relDic = {
@@ -353,8 +363,10 @@ class AutoPay(AutoUs):
         self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
         # 借记卡
         print("借记卡")
-        self.Wait(
-            xpath='//*[@id="j_id0:SiteTemplate:j_id118"]/table/tbody/tr[2]/td[1]/a')
+        if ' USD 160 ' in self.driver.page_source:
+            self.usPipe.uploadOrder(self.res["id"], interview_status=2)
+            return
+        self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id118"]/table/tbody/tr[2]/td[1]/a')
         while True:
             code = self.driver.find_element("id", "referenceCell").text
             if code:
@@ -420,6 +432,16 @@ class AutoPay(AutoUs):
                 xpath='//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "重新预约")]')
             jx = 0
 
+        sleep(2)
+        try:
+            self.driver.find_element_by_xpath('//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input').click()
+            sleep(2)
+        except:
+            pass
+        try:
+            self.driver.find_element_by_xpath('/html/body/div[2]/div[3]/div/button/span').click()
+        except:
+            pass
         if jx:
             try:
                 self.Wait(xpath='/html/body/div[2]/div[3]/div/button')
@@ -427,7 +449,8 @@ class AutoPay(AutoUs):
                 pass
             sleep(1)
             try:
-                self.driver.find_element_by_xpath('/html/body/div[4]/div[3]/div/button[1]/span')
+                self.driver.find_element_by_xpath(
+                    '/html/body/div[4]/div[3]/div/button[1]/span')
             except:
                 pass
             try:
@@ -443,7 +466,7 @@ class AutoPay(AutoUs):
         return data
 
     def appointment(self):
-        if self.id != self.res["id"]:# and self.driver.current_url != "":
+        if self.id != self.res["id"]:
             data = self.getDate()
             self.id = self.res["id"]
         else:
@@ -459,13 +482,13 @@ class AutoPay(AutoUs):
             "am,pm": APPDAYS
         }
 
-        # {"day":"30-9-2018,10-10-2018,12-10-2018","t":"am,pm"}
         for day in userDate["day"]:
             if day in data:
                 d = f'{day.split("-")[0]:0>2}'
                 mo = f'{day.split("-")[1]:0>2}'
                 try:
-                    Select(self.driver.find_element_by_xpath('//select')).select_by_index(1)
+                    Select(self.driver.find_element_by_xpath(
+                        '//select')).select_by_index(1)
                 except:
                     pass
                 while 1:
@@ -474,25 +497,33 @@ class AutoPay(AutoUs):
                         break
                     except:
                         self.Wait(xpath='//*[@id="datepicker"]/div/div[3]/div/a')
-                
-                self.Wait(xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]/../../following-sibling::table//a[contains(text(),"{int(d)}")]')
+
+                divs = self.driver.find_elements_by_css_selector('#datepicker > div > div.ui-datepicker-group')
+                for div in divs:
+                    if div.find_element_by_xpath('./div/div/span').text == MON[mo]:
+                        div.find_element_by_xpath(f".//a[contains(text(), {int(d)})]").click()
+                        break
 
                 self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
                 for mi in tim[userDate["t"]]:
-                    self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{mi}")]/preceding-sibling::td[1]/input')
-                    s_time = self.driver.find_element_by_xpath(f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{mi}")]').text
+                    self.Wait(
+                        xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{mi}")]/preceding-sibling::td[1]/input')
+                    s_time = self.driver.find_element_by_xpath(
+                        f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{mi}")]').text
                     self.Wait("thePage:SiteTemplate:theForm:addItem")
-                    self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
-                    self.Wait( xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
                     file = {
                         "file": (
-                            "AppointmentConfirmation.pdf", 
-                            open("./usFile/AppointmentConfirmation.pdf", "rb"), 
+                            "AppointmentConfirmation.pdf",
+                            open("./usFile/AppointmentConfirmation.pdf", "rb"),
                             "application/pdf"
                         )
                     }
-                    url = "www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
-                    res = requests.post(url, files=file).text
+                    url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+                    res = requests.post(url, files=file).json()
                     success_time = f"{'-'.join([day.split('-')][::-1])} {s_time}"
                     # 存入数据库
                     self.usPipe.uploadOrder(ids=self.res["id"],interview_success=success_time, interview_status="6", interview_pdf=res, interview_num=self.res["interview_num"]-1)

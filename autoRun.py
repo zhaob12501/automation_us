@@ -99,7 +99,7 @@ class UsRun:
             # =======
             print('\n有数据进行提交\n')
             self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
-            
+
             self.control[self.au.resPublic["visa_status"]]()
 
             if self.auto:
@@ -117,7 +117,6 @@ class UsRun:
 def main():
     r = UsRun()
     while True:
-        # r.run
         try:
             r.run
         except UsError as ue:
@@ -126,13 +125,18 @@ def main():
         except Exception as e:
             print("in e error")
             print(f"other:\n{e}")
-        print("sleep 30s")
+            print("sleep 30s")
         sleep(5)
 
 
 if __name__ == '__main__':
     print(strftime("%Y-%m-%d %H-%M-%S"))
     main()
+    # import requests
+    # with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+    #     files = {'file': ("AppointmentConfirmation.pdf", f.read(), "application/pdf")}
 
-# [{"name": "YANG", "names": "JINFA", "relation": "F"}, {"name": "LIU", "names": "WENLONG", "relation": "F"}]
-# 申请人之资料已出现于此电子邮箱 "janice.fu@lettours.com ". 如果您此前已创建账户，为了避免重复账户带来不必要的麻烦，您可以将此前的账户转至当前的国家。
+    # url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+    # res = requests.post(url, files=files).json()
+    # print(res)
+
