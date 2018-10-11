@@ -22,11 +22,4 @@ db.ini
 *.jpeg
 *.pdf
 *.exe
-settings.*
-user_pwd
-*.txt
-.vscode
-us_html
-otherFile
-us_log
-usFile
+*.log

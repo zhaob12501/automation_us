@@ -10,9 +10,9 @@ import time
 
 import requests
 
-from pipelines import us_data
-from settings import CITY
-from yunsu import upload
+from .pipelines import us_data
+from .settings import CITY
+from .yunsu import upload
 
 
 class AutomationUS:

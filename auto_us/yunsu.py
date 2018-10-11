@@ -12,7 +12,7 @@ from datetime import datetime
 import operator
 import requests
 
-from settings import USERDB, PASSWD
+from .settings import USERDB, PASSWD
 
 
 class APIClient(object):
@@ -102,6 +102,3 @@ def upload(typeid=3000):
         data = {'type': '3', 'num': f'{len(result) * 2.5}'}
         requests.post("http://www.mobtop.com.cn/index.php?s=/Api/MalaysiaApi/useInterface", data=data)
         return result
-
-if __name__ == '__main__':
-    print(upload())

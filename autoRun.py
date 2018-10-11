@@ -5,9 +5,8 @@
 @Last Modified by:   ZhaoBin 
 @Last Modified time: 2018-08-08 17:00:41 
 """
-from autoUS import AllPage, Base
-from pipelines import UsPipeline
-from settings import POOL, UsError, json, sleep, strftime, os, glob
+from auto_us import AllPage, UsPipeline
+from auto_us.settings import POOL, UsError, json, sleep, strftime, os, glob, sys
 
 
 class UsRun:
@@ -16,15 +15,23 @@ class UsRun:
 
     def __init__(self):
         self.pool = POOL()
-        self.chrome = Base()
-        self.driver = self.chrome.driver
+        self.au = AllPage(usPipe=UsPipeline(self.pool))
         self.control = {
-            1: self.fillInfo,
-            2: self.lastDone,
-            3: self.usPay,
-            4: self.appointment,
+            0: self.con0,
+            1: self.con1,
+            2: self.con2,
         }
-        self.au = AllPage(usPipe=UsPipeline(pool=self.pool), driver=self.driver)
+        self.urList = [
+            "Personal1", "Personal2", "AddressPhone", "PptVisa", "Travel", 
+            "TravelCompanions", "PreviousUSTravel", "USContact", "Relatives", 
+            "Spouse", "DeceasedSpouse", "PrevSpouse", "WorkEducation1", 
+            "WorkEducation2", "WorkEducation3", "SecurityandBackground1",
+            "SecurityandBackground2", "SecurityandBackground3", 
+            "SecurityandBackground4", "SecurityandBackground5", "UploadPhoto", 
+            "ConfirmPhoto", "ReviewPersonal", "ReviewTravel", "ReviewUSContact", 
+            "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity", 
+            "ReviewLocation", "SignCertify"
+        ]
 
     def fillInfo(self):
         if self.au.resPublic['aacode']:
@@ -32,32 +39,37 @@ class UsRun:
         else:
             self.au.default
 
+    def sendInfo(self):
         ans = self.au.run
-        with open("all_ url.json", "w+", encoding="utf8") as f:
+        with open("all_url.json", "w+", encoding="utf8") as f:
             json.dump(self.au.allUrl, f)
         if ans:
             return 1
         return 0
-
-    def lastDone(self):
-        if self.au.getNode != "":
-            self.au.continueGo()
+    
+    def done(self):
         self.au.signCertify()
         self.au.done()
         self.au.uploadPdf
         print('upload Pdf file over')
 
-    def usPay(self):
-        code = self.au.login()
-        return code
-        # self.au.citicPay('730192030365')
+    def con0(self):
+        if self.au.getNode not in self.urList:
+            self.fillInfo()
+        self.sendInfo()
 
-    def appointment(self, data=None):
-        self.au.appointment(data)
+    def con1(self):
+        self.fillInfo()
+        self.done()
+
+    def con2(self):
+        self.au.renamePdf()
+        self.au.uploadPdf
+
 
     @property
     def run(self):
-        pool = POOL() 
+        pool = POOL()
         # ========
         # 开始执行
         # ========
@@ -73,19 +85,12 @@ class UsRun:
             print('数据库连接完毕...')
 
             # 获取数据库信息
-            self.data = self.auto.selDB
-
+            data = self.auto.selDBInfo
+            print(f"data: {data}")
             # 判断是否需要申请
-            if not self.data:
+            if not data:
                 print('没有数据, 准备刷新...')
                 print(strftime('%m/%d %H:%M:%S'))
-                path = '.\\usFile'
-                try:
-                    for infile in glob.glob(os.path.join(path, '*.pdf') ):  
-                        os.remove(infile) 
-                except:
-                    print('.pdf no del')
-
                 sleep(5)
                 continue
 
@@ -93,11 +98,13 @@ class UsRun:
             # 数据处理
             # =======
             print('\n有数据进行提交\n')
-            self.au.resPublic, self.au.resInfo, self.au.resWork = self.data
-            self.control[self.au.resPublic["america_visa_status"]]()
+            self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
+            
+            self.control[self.au.resPublic["visa_status"]]()
 
             if self.auto:
                 del self.auto
+
 
     def __del__(self):
         try:
@@ -110,15 +117,22 @@ class UsRun:
 def main():
     r = UsRun()
     while True:
+        # r.run
         try:
             r.run
         except UsError as ue:
+            print("in ue error")
             print(ue)
         except Exception as e:
+            print("in e error")
             print(f"other:\n{e}")
         print("sleep 30s")
-        sleep(30)
+        sleep(5)
 
 
 if __name__ == '__main__':
+    print(strftime("%Y-%m-%d %H-%M-%S"))
     main()
+
+# [{"name": "YANG", "names": "JINFA", "relation": "F"}, {"name": "LIU", "names": "WENLONG", "relation": "F"}]
+# 申请人之资料已出现于此电子邮箱 "janice.fu@lettours.com ". 如果您此前已创建账户，为了避免重复账户带来不必要的麻烦，您可以将此前的账户转至当前的国家。
