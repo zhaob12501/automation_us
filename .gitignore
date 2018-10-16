@@ -25,3 +25,5 @@ db.ini
 *.log
 settings.py
 .vscode
+text.py
+*.txt

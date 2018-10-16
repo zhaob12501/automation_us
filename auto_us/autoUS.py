@@ -69,7 +69,17 @@ class Base:
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
         self.driver.implicitly_wait(10)
-        self.driver.maximize_window()
+        # self.driver.maximize_window()
+        # 设置显性等待时间, timeout = 10, 间隔 0.3s 检查一次
+        self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
+
+    @property
+    def getDriver(self):
+        self.driver = webdriver.Chrome(
+            executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
+        # 设置隐性等待时间, timeout = 20
+        self.driver.implicitly_wait(10)
+        # self.driver.maximize_window()
         # 设置显性等待时间, timeout = 10, 间隔 0.3s 检查一次
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
 
@@ -184,7 +194,7 @@ class AutoUs(Base):
             resWork:    数据库 dc_business_america_work_eng 信息
     """
     def __init__(self, data=None, usPipe=None, noWin=False, noImg=False):
-        super().__init__(noWin, noImg)
+        super().__init__(noWin=noWin, noImg=noImg)
         self.resPublic, self.resInfo, self.resWork = data if data else (
             0, 0, 0)
         self.usPipe = usPipe
@@ -225,13 +235,16 @@ class AutoUs(Base):
         # self.choiceSelect("ctl00_SiteContentPlaceHolder_ucLocation_ddlLocation", 'BEJ')
         #　识别验证码
         while self.driver.current_url == self.usUrl:
-            result = self.getCaptcha(
-                'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-            self.Wait(
-                'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
-            sleep(1)
-            self.Wait('ctl00_SiteContentPlaceHolder_lnkNew')
-            sleep(0.2)
+            try:
+                result = self.getCaptcha(
+                    'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(
+                    'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                sleep(1)
+                self.Wait('ctl00_SiteContentPlaceHolder_lnkNew')
+            except:
+                pass
+            sleep(2)
 
         self.Wait("ctl00_SiteContentPlaceHolder_txtAnswer", self.answer)
         self.Wait("ctl00_SiteContentPlaceHolder_btnContinue")
@@ -250,13 +263,15 @@ class AutoUs(Base):
             "ctl00_SiteContentPlaceHolder_ucLocation_ddlLocation", self.resInfo['activity'])
 
         while self.driver.current_url == self.usUrl:
-            result = self.getCaptcha(
-                'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-            self.Wait(
-                'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
-            self.Wait('ctl00_SiteContentPlaceHolder_lnkRetrieve')
+            try:
+                result = self.getCaptcha(
+                    'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(
+                    'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                self.Wait('ctl00_SiteContentPlaceHolder_lnkRetrieve')
 
-            if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
+                if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
+            except: pass
             sleep(2)
 
         self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_tbxApplicationID",
@@ -289,6 +304,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
             "Surnames has not been completed.": "姓氏未填",
             "Given Names has not been completed.": "名字未填",
             "Full Name in Native Alphabet has not been completed.": "原名未填",
@@ -320,7 +336,6 @@ class AutoUs(Base):
             "City has not been completed.": "城市未填",
             "The question \"Is your Mailing Address the same as your Home Address?\" has not been answered.": "邮寄地址未选",
             "Email Address has not been completed.": "电子邮件地址未填",
-            "Primary Phone Number has not been completed.": "电话未填",
             "Secondary Phone Number accepts only numbers (0-9).": "次要电话只能是数字",
             "Work Phone Number accepts only numbers (0-9).": "工作电话只能是数字",
             "Email Address is invalid. Verify the format is correct.": "电子邮箱不可用",
@@ -391,12 +406,12 @@ class AutoUs(Base):
             "Briefly describe your duties: has not been completed.": "工作职责未填",
             "Name of Institution has not been completed.": "机构名称未填",
             "Postal Zone/ZIP Code has not been completed.": "邮编未填",
-            "Course of Study has not been completed.": "课程未填",
+            "Course of Study has not been completed.": "课程名未填",
             "Date of Attendance From is invalid. Month and Year are required.": "入学时间未填",
             "Date of Attendance To is invalid. Month and Year are required.": "毕业时间未填",
-            "Employer Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "公司名称只能为: A-Z, 0-9, -, ', & 和 空格",
+            "Employer Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "公司名称只能为: A-Z, 0-9, -, \', & 和 空格",
             "The question \"Do you have any specialized skills or training, such as...?\" has not been answered.": "是否具有特殊技能/培训",
-            "Organization Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "组织名无效(与公司名要求一致)",
+            "Organization Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "组织名无效(与公司名要求一致)",
             "The submitted photo did not meet the image quality requirements.": "照片不合格",
             "Unable to read image memory into DibImage.": "无法读取图像",
             "Telephone Number accepts only numbers (0-9).": "电话只能是数字 0-9",
@@ -410,9 +425,13 @@ class AutoUs(Base):
         ls = []
         ls.append(errInfo)
         for i in errlist[1:]:
-            ls.append(self.errDict.get(i, i))
-        err = json.dumps(ls).replace('\\', '\\\\')
+            ls.append(self.errDict.get(i, i).replace("'", "\\'"))
+        # err = json.dumps(ls).replace('\\', '\\\\')
+        err = f'''{errInfo}|{'|'.join(ls)}'''
+        # self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
         if status:
+            if self.resPublic["conditions"] > 5:
+                self.usPipe.upload(self.resPublic['aid'], conditions=0)
             if self.resPublic["status"] == 2:
                 self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
             elif self.resPublic["conditions"] == 5:
@@ -503,7 +522,8 @@ class AllPage(AutoUs):
         while self.getNode and self.getNode != 'SignCertify':
             if self.nodeDict[self.getNode]():
                 return 1
-        self.usPipe.upload(self.resPublic["aid"], visa_status="1")
+        if self.getNode == 'SignCertify':
+            self.usPipe.upload(self.resPublic["aid"], visa_status="1")
         return 0
 
     # ================== #
@@ -623,9 +643,12 @@ class AllPage(AutoUs):
             raise UsError("持有其它国家的永久居住权身份")
 
         # 身份证号
-        if self.resPublic['pay_personal_address']:
+        if self.resInfo['identity_number']:
             ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_NATIONAL_ID",
-                        self.resPublic['pay_personal_address']))
+                        self.resInfo['identity_number']))
+        # if self.resPublic['pay_personal_address']:
+        #     ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_NATIONAL_ID",
+        #                 self.resPublic['pay_personal_address']))
         else:
             ids.append(
                 ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_NATIONAL_ID_NA", ""))
@@ -872,8 +895,11 @@ class AllPage(AutoUs):
             "ctl00_SiteContentPlaceHolder_FormView1_ddlWhoIsPaying", self.resPublic['travel_cost_pay'])
         if self.resPublic['travel_plans_is'] == "N":
             year, mon, day = self.resPublic['arrive_time'].split('-')
+            try:
+                self.driver.find_element_by_id("ctl00_SiteContentPlaceHolder_FormView1_rblSpecificTravel_1").click()
+            except:
+                pass
             ids = [
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblSpecificTravel_1", ""),
                 ("ctl00_SiteContentPlaceHolder_FormView1_ddlTRAVEL_DTEDay", day),
                 ("ctl00_SiteContentPlaceHolder_FormView1_tbxTRAVEL_DTEYear", year),
                 ("ctl00_SiteContentPlaceHolder_FormView1_ddlTRAVEL_DTEMonth",
@@ -918,7 +944,7 @@ class AllPage(AutoUs):
                         (f"ctl00_SiteContentPlaceHolder_FormView1_dtlTravelLoc_ctl0{index - 1}_InsertButtonTravelLoc", ""))
                 ids.append(
                     (f"ctl00_SiteContentPlaceHolder_FormView1_dtlTravelLoc_ctl0{index}_tbxSPECTRAVEL_LOCATION", value["city"]))
-
+        
         # 在美停留期间的住址
         ids += [
             ("ctl00_SiteContentPlaceHolder_FormView1_tbxStreetAddress1",
@@ -949,8 +975,9 @@ class AllPage(AutoUs):
                 ids.append(
                     ("ctl00_SiteContentPlaceHolder_FormView1_cbxDNAPAYER_EMAIL_ADDR_NA", ""))
             # 与您的关系
-            self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_lblPayerRelationship",
-                              self.resPublic['pay_personal_relation'])
+            # self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlPayerRelationship", self.resPublic['pay_personal_relation'])
+            s = Select(self.driver.find_element_by_id("ctl00_SiteContentPlaceHolder_FormView1_ddlPayerRelationship"))
+            s.select_by_value(self.resPublic['pay_personal_relation'])
             # 为您支付旅行费用的一方，其地址是否与您的家庭地址或邮寄地址相同？
             if self.resPublic['pay_personal_address_is'] == 'Y':
                 ids.append(
@@ -1921,13 +1948,15 @@ class AllPage(AutoUs):
         self.Wait("ctl00_SiteContentPlaceHolder_PPTNumTbx",
                   self.resInfo["passport_number"])
         while "You have successfully" not in self.driver.page_source and "sign your application:" in self.driver.page_source:
-            self.driver.execute_script("document.documentElement.scrollTop=910")
-            result = self.getCaptcha(
-                "c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
-            self.Wait("ctl00_SiteContentPlaceHolder_CodeTextBox", result)
-            self.Wait("ctl00_SiteContentPlaceHolder_btnSignApp")
-            if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
-            sleep(0.2)
+            try:
+                self.driver.execute_script("document.documentElement.scrollTop=910")
+                result = self.getCaptcha(
+                    "c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
+                self.Wait("ctl00_SiteContentPlaceHolder_CodeTextBox", result)
+                self.Wait("ctl00_SiteContentPlaceHolder_btnSignApp")
+                if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
+            except: pass
+            sleep(2)
         self.urlButton()
         return 0
 

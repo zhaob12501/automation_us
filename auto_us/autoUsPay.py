@@ -29,7 +29,7 @@ class AutoPay(AutoUs):
         self.driver.get("https://cgifederal.secure.force.com/SiteRegister?country=china&language=")
         self.Wait(xpath=f'//*[@id="{register_id_befor}"]/table/tbody/tr[7]/td/label/input')
         sleep(0.5)
-        # self.Wait(f"{register_id_befor}:username", "jiu20187745re@163.com")
+        # self.Wait(f"{register_id_befor}:username", "ming62401suan@163.com")
         # self.Wait(f"{register_id_befor}:firstname", "xiaofang")
         # self.Wait(f"{register_id_befor}:lastname", "kang")
         self.Wait(f"{register_id_befor}:username", self.resInfo["home_email"])
@@ -46,34 +46,31 @@ class AutoPay(AutoUs):
             except:
                 pass
             if "SiteRegister" not in self.driver.current_url: break
-            sleep(0.2)
-        self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id14:j_id15:j_id26:j_id27:j_id28"]/select', text="Chinese (Simplified)")
+            sleep(2)
+        Select(self.Wait(xpath='//select', text=NC)).select_by_index(1)
         self.usPipe.uploadOrder(self.res["id"], register_is=1)
 
-    def login(self):
+    def login(self, pwd=PASSWD):
         """ 登陆 """
         # 打开付款网址
         print("打开付款网址")
         self.driver.get(self.payUrl)
         # 输入用户名密码
         print("输入用户名密码")
-        self.Wait(
-            "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", self.email)
+        # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", "janice.fu@lettours.com")
+        self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", self.email)
         sleep(1)
         # 点击同意条款
         print("点击同意条款")
-        self.Wait(
-            xpath='//*[@id="loginPage:SiteTemplate:siteLogin:loginComponent:loginForm"]/div[2]/div[2]/table/tbody/tr[3]/td/label/input')
+        self.Wait(xpath='//*[@id="loginPage:SiteTemplate:siteLogin:loginComponent:loginForm"]/div[2]/div[2]/table/tbody/tr[3]/td/label/input')
         # 验证码识别
         print("验证码识别")
         for _ in range(5):
             try:
-                self.Wait(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", PASSWD)
-                result = self.getCaptcha(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
-                self.Wait(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
+                # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", "janice522")
+                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
+                result = self.getCaptcha( "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
+                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
                 sleep(0.5)
                 # 点击登陆
                 print("点击登陆")
@@ -86,7 +83,8 @@ class AutoPay(AutoUs):
             except:
                 pass
         sleep(1)
-        self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id14:j_id15:j_id26:j_id27:j_id28"]/select', text="Chinese (Simplified)")
+        # Select(self.driver.find_element("xpath", "//select")).select_by_index(1)
+        Select(self.Wait(xpath='//select', text=NC)).select_by_index(1)
 
     def payInfo(self):
         """ 付款页面 """
@@ -140,8 +138,9 @@ class AutoPay(AutoUs):
             pass
 
         try:
-            Select(self.driver.find_element_by_xpath('//select')).select_by_index(1)
             self.Wait("AcceptButton")
+            self.Wait(xpath='//select', text=NC)
+            Select(self.driver.find_element_by_xpath('//select')).select_by_index(1)
         except:
             pass
 
@@ -187,7 +186,7 @@ class AutoPay(AutoUs):
         # 性别
         print("性别")
         gender = Select(self.driver.find_element_by_id("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1093"))
-        gender.select_by_index(1 if self.resInfo["sex"] == "M" else 2)
+        gender.select_by_value("Male" if self.resInfo["sex"] == "M" else "Female")
 
         # AAcode
         # self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1107", "AA008BHNQC")
@@ -221,12 +220,11 @@ class AutoPay(AutoUs):
             city = zhInfo["mailing_address_city"]
             province = zhInfo["mailing_address_province"]
             zipCode = zhInfo["mailing_address_zip"]
-        self.Wait(
-            "thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1168", live_address)
+        self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1168", live_address)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1175", city)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1182", province)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1189", zipCode)
-
+        
         self.driver.save_screenshot("usFile/table.png")
         table = self.driver.find_element("id", "profileTab")
         left, top = table.location['x'], table.location['y']
@@ -237,22 +235,30 @@ class AutoPay(AutoUs):
 
         self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm"]/input[3]')
         try:
+            sleep(3)
             err = self.driver.find_element_by_css_selector('body > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-resizable').text
+            # if self.res["exist_status"] == 2:
+            #     self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
+            #     self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm"]/input[3]')
+            #     self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id113:j_id114"]/div/div/strong', text=NC)
+            #     text = self.driver.find_element('xpath', '//*[@id="j_id0:SiteTemplate:j_id113:j_id114"]/div/div/strong').text
+            #     textlist = f"警告:{text}"
+            #     self.usPipe.uploadOrder(self.res['id'], interview_img=textlist)
+            #     return 
+            # else:
             err = '|'.join(err.replace("\nclose","").split("\n")[:3])
-            self.res["exist_status"] = 1
             self.usPipe.uploadOrder(self.res["id"], exist_email=err, exist_status=1, interview_status=0)
+            return 0
         except:
             pass
-
-        if self.res["exist_status"] in [1, 3]:
-            return
-
         with open("usFile/table.png", 'rb') as f:
             files = {'file': f.read()}
 
         url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
         res = requests.post(url, files=files).json()
         self.usPipe.uploadOrder(self.res['id'], interview_img=res)
+
+        
 
         if self.resPublic["associate_is"] == "Y" and self.resPublic["associate_tuxedo_is"] == "N":
             relDic = {
@@ -539,3 +545,152 @@ class AutoPay(AutoUs):
         self.Wait(xpath='//a[contains(text(),"取消预约")]')
         self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id120"]/table/tbody/tr[14]/td/input[1]')
         print("取消成功")
+
+    def groupAppointment(self, group_email='', group_pwd=''):
+        group_email = "janice.fu@lettours.com"
+        group_pwd = "janice522"
+        self.email = group_email
+        self.group_pwd = group_pwd
+        self.login(self.group_pwd)
+        self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
+        # 中间操作
+        self.middle()
+        self.Wait(css="#summary", text=NC)
+        lens = len(self.driver.find_elements_by_css_selector("#summary > ul > li"))
+        [self.Wait(css="button") for _ in lens]
+        self.Wait(css='#create-user > span')
+        self.Wait(css="select.formRelationship", text="Other")
+        self.Wait(css=".requiredInput > .formDs160", text=self.resPublic["aacode"])
+        self.Wait(css=".requiredInput > .formNationalId", text=self.resInfo["identity_number"])
+        self.Wait(css="span >.requiredInput > .requiredInput > .formFirstName", text=self.resInfo["english_name_s"])
+        self.Wait(css=".requiredInput > .formLastName", text=self.resInfo["english_name"])
+        gender = Select(self.driver.find_element("css selector", ".requiredInput > select.formGender"))
+        gender.select_by_value("Male" if self.resInfo["sex"] == "M" else "Female")
+        year, month, day = self.resInfo["date_of_birth"].split("-")
+        self.Wait(css="#datepicker > input", text=f"{month}/{day}/{year}")
+        country = "China"
+        self.Wait(css='.requiredInput > .formCountryOfBirth', text=country)
+        self.Wait(css='#issuancePlace > span > .formNationality', text=country)
+        self.Wait(css='.requiredInput > span > select', text=country)
+        self.Wait(css='.requiredInput > .formPassport', text=self.resInfo["passport_number"])
+        year, month, day = self.resInfo["lssue_date"].split("-")
+        self.Wait(css='.requiredInput > div > .formPassportDate', text=f"{month}/{day}/{year}")
+        year, month, day = self.resInfo["expiration_date"].split("-")
+        self.Wait(css='.requiredInput > div > .formPassportExpirationDate', text=f"{month}/{day}/{year}")
+        self.Wait(css='.requiredInput > .formPhone', text='+86' + self.resInfo["home_telphone"])
+        standby_phone = self.resInfo["tel"] if self.resInfo["tel"] else self.resInfo["company_phone"] if self.resInfo["company_phone"] else self.resInfo["home_telphone"]
+        self.Wait(css='.requiredInput > .formPhone', text='+86' + standby_phone)
+        self.Wait(css='.requiredInput > .formEmail', text=group_email)
+        self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
+        sleep(1)
+        errs = self.driver.find_elements("css selector", ".error > li")
+        if errs and self.driver.current_url == 'https://cgifederal.secure.force.com/adddependents':
+            self.selApp()
+            return
+        self.Wait(css='input.continue')
+        self.mail()
+        self.receipt()
+
+    # 预约人已存在, 查询修改DS160码并继续
+    def selApp(self):
+        self.driver.get("https://cgifederal.secure.force.com/ApplicantHome")
+        self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(2) > a')
+        self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)', text=self.resInfo["english_name_s"])
+        self.Wait(css='#dashboard > span > form > input[type="submit"]:nth-child(3)')
+        self.Wait(css='table > tbody > tr > td:nth-child(2) > span > a')
+        self.middle()
+        self.Wait(css=".ui-icon-pencil")
+        self.Wait(css=".requiredInput > .formDs160", text=self.resPublic["aacode"])
+        # 预约信息图片
+        self.driver.save_screenshot("usFile/info.png")
+        info = self.driver.find_element("css selector", "#dialog-form > form > table")
+
+        self.Wait(css='.ui-button-text')
+        self.Wait(css='input.continue')
+        self.mail()
+        self.receipt()
+
+    # 中间操作
+    def middle(self):
+        radio = self.Wait(css='table > tbody > tr:nth-child(2) > td > input', text=NC)
+        if not radio.is_selected():
+            radio.click()
+            self.Wait(css=".ui-button-text")
+        self.Wait(css='input.continue')
+        lq = {"BEJ": 1, "CHE": 2, "GUZ": 3, "SHG": 4, "SNY": 5,}
+        self.Wait(css=f"table > tbody > tr:nth-child({lq[self.resInfo['activity']]}) > td > input")
+        self.Wait(css='input.continue')
+        purpose = json.loads(self.resPublic["america_purpose"])[0]
+        if self.resInfo["activity"] in ["BEJ", "GUZ", "SHG", "SNY"]:
+            if purpose["one"] == "B":
+                self.Wait(css='table > tbody > tr:nth-child(1) > td > input')
+        elif self.resInfo["activity"] == "CHE":
+            if purpose["one"] == "B":
+                self.Wait(css='table > tbody > tr:nth-child(4) > td > input')
+        self.Wait(css='input.continue')
+        ppDic = {
+            "B1-CF": '#accordion > div:nth-child(2) > table > tbody > tr:nth-child(1) > td > input',
+            "B1-B2": '#accordion > div:nth-child(2) > table > tbody > tr:nth-child(2) > td > input',
+            "B2-TM": '#accordion > div:nth-child(2) > table > tbody > tr:nth-child(3) > td > input',
+        }
+        self.Wait(css=ppDic[purpose["two"]])
+        self.Wait(css='input.continue')
+
+    # 中信取件或邮寄
+    def mail(self):
+        # 指定护照/文件送达地址
+        print("指定护照/文件送达地址")
+        zx = json.loads(self.resPublic["zhongxin"])
+        if zx["status"] == "Y":
+            self.Wait("thePage:SiteTemplate:theForm:j_id172:0")
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[1]', text=NC)
+            Select(self.driver.find_element(
+                "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[1]')).select_by_value(zx["city"])
+            try:
+                self.Wait(
+                    xpath='//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]', text=NC)
+                Select(self.driver.find_element(
+                    "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')).select_by_value(zx["area"])
+                sleep(2)
+                self.Wait(
+                    xpath='//*[@id="addresses"]/tbody/tr[1]/td[1]/input', text=NC)
+                xx = self.driver.find_elements(
+                    "xpath", '//*[@id="addresses"]/tbody/tr')
+                for i in range(len(xx)):
+                    tx = self.driver.find_element(
+                        "xpath", f'//*[@id="addresses"]/tbody/tr[{i+1}]/td[2]/strong').text
+                    if tx.strip() == zx["address"].strip():
+                        self.Wait(xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
+                        break
+                self.Wait(
+                    xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
+            except:
+                self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
+        elif zx["status"] == "N":
+            self.Wait("thePage:SiteTemplate:theForm:j_id172:1")
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[1]/td[2]/textarea', text=zx["mail_address"])
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[2]/td[2]/input', text=zx["mail_city"])
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[3]/td[2]/input', text=zx["mail_province"])
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[4]/td[2]/input', text=zx["mail_code"])
+            self.Wait(
+                xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
+        # 付款
+        print("付款")
+        self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+
+    # 付款填写收据 | 返回付款编号
+    def receipt(self, code=''):
+        if code:
+            self.Wait(xpath='/html/body/div[2]/div[1]/a')
+            self.Wait(css='dd> span > input', text=code)
+            self.Wait(css='input.continue')
+        else:
+            self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+            self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
+            self.Wait(css='#referenceCell', text=NC)
+            return self.driver.find_element_by_css_selector('#referenceCell').text

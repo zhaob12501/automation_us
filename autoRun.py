@@ -5,8 +5,12 @@
 @Last Modified by:   ZhaoBin 
 @Last Modified time: 2018-08-08 17:00:41 
 """
+from time import time
+
 from auto_us import AllPage, UsPipeline
-from auto_us.settings import POOL, UsError, json, sleep, strftime, os, glob, sys
+from auto_us.settings import (POOL, UsError, glob, json, os, sleep, strftime,
+                              sys)
+st = 0
 
 
 class UsRun:
@@ -22,14 +26,14 @@ class UsRun:
             2: self.con2,
         }
         self.urList = [
-            "Personal1", "Personal2", "AddressPhone", "PptVisa", "Travel", 
-            "TravelCompanions", "PreviousUSTravel", "USContact", "Relatives", 
-            "Spouse", "DeceasedSpouse", "PrevSpouse", "WorkEducation1", 
+            "Personal1", "Personal2", "AddressPhone", "PptVisa", "Travel",
+            "TravelCompanions", "PreviousUSTravel", "USContact", "Relatives",
+            "Spouse", "DeceasedSpouse", "PrevSpouse", "WorkEducation1",
             "WorkEducation2", "WorkEducation3", "SecurityandBackground1",
-            "SecurityandBackground2", "SecurityandBackground3", 
-            "SecurityandBackground4", "SecurityandBackground5", "UploadPhoto", 
-            "ConfirmPhoto", "ReviewPersonal", "ReviewTravel", "ReviewUSContact", 
-            "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity", 
+            "SecurityandBackground2", "SecurityandBackground3",
+            "SecurityandBackground4", "SecurityandBackground5", "UploadPhoto",
+            "ConfirmPhoto", "ReviewPersonal", "ReviewTravel", "ReviewUSContact",
+            "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity",
             "ReviewLocation", "SignCertify"
         ]
 
@@ -46,7 +50,7 @@ class UsRun:
         if ans:
             return 1
         return 0
-    
+
     def done(self):
         self.au.signCertify()
         self.au.done()
@@ -54,18 +58,21 @@ class UsRun:
         print('upload Pdf file over')
 
     def con0(self):
+        global st
+        st = time()
         if self.au.getNode not in self.urList:
             self.fillInfo()
         self.sendInfo()
 
     def con1(self):
-        self.fillInfo()
+        # self.fillInfo()
         self.done()
 
     def con2(self):
+        global st
         self.au.renamePdf()
         self.au.uploadPdf
-
+        print('=' * 20, "End time :" + time() - st, '=' * 20, '\n\n')
 
     @property
     def run(self):
@@ -90,6 +97,12 @@ class UsRun:
             # 判断是否需要申请
             if not data:
                 print('没有数据, 准备刷新...')
+                try:
+                    self.au.driver.get(self.au.usUrl)
+                except:
+                    if hasattr(self.au, 'driver'):
+                        self.au.driver.quit()
+                    self.au.getDriver
                 print(strftime('%m/%d %H:%M:%S'))
                 sleep(5)
                 continue
@@ -105,7 +118,6 @@ class UsRun:
             if self.auto:
                 del self.auto
 
-
     def __del__(self):
         try:
             if self.pool:
@@ -117,6 +129,7 @@ class UsRun:
 def main():
     r = UsRun()
     while True:
+        # r.run
         try:
             r.run
         except UsError as ue:
@@ -139,4 +152,3 @@ if __name__ == '__main__':
     # url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
     # res = requests.post(url, files=files).json()
     # print(res)
-

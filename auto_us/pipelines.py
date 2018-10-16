@@ -106,8 +106,8 @@ class UsPipeline():
         return 0
 
     def selAppointment(self):
-        # sql = f"SELECT * FROM dc_business_america_order WHERE interview_status=1"
-        sql = f"SELECT * FROM dc_business_america_order WHERE id=31"
+        sql = f"SELECT * FROM dc_business_america_order WHERE interview_status=1"
+        # sql = f"SELECT * FROM dc_business_america_order WHERE id=31"
         if self.selDBOrder(sql):
             return 1
         return 0
