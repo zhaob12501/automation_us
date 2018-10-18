@@ -95,28 +95,35 @@ class UsRun:
             data = self.auto.selDBInfo
             print(f"data: {data}")
             # 判断是否需要申请
-            if not data:
+            if data:
+                # =======
+                # 数据处理
+                # =======
+                print('\n有数据进行提交\n')
+                # self.au = AllPage(data=self.auto.data, usPipe=UsPipeline(self.pool))
+                self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
+                try:
+                    self.control[self.au.resPublic["visa_status"]]()
+                except Exception as e:
+                    print(e)
+                    if hasattr(self.au, 'driver'):
+                        self.au.driver.quit()
+                        self.au.getDriver
+
+                if self.auto:
+                    del self.auto
+            elif not data:
                 print('没有数据, 准备刷新...')
                 try:
                     self.au.driver.get(self.au.usUrl)
                 except:
                     if hasattr(self.au, 'driver'):
                         self.au.driver.quit()
-                    self.au.getDriver
+                #     self.au.getDriver
                 print(strftime('%m/%d %H:%M:%S'))
                 sleep(5)
                 continue
 
-            # =======
-            # 数据处理
-            # =======
-            print('\n有数据进行提交\n')
-            self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
-
-            self.control[self.au.resPublic["visa_status"]]()
-
-            if self.auto:
-                del self.auto
 
     def __del__(self):
         try:

@@ -416,6 +416,7 @@ class AutoUs(Base):
             "Unable to read image memory into DibImage.": "无法读取图像",
             "Telephone Number accepts only numbers (0-9).": "电话只能是数字 0-9",
             "Date is invalid.": "日期无效",
+            "Name of Institution is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "公司名或学校名只能为:(A-Z) 或 (0-9) 或 (') 或 (-) 或 (&)"
         }
         return err
 
@@ -425,18 +426,21 @@ class AutoUs(Base):
         ls = []
         ls.append(errInfo)
         for i in errlist[1:]:
-            ls.append(self.errDict.get(i, i).replace("'", "\\'"))
+            ls.append(self.errDict.get(i, i))
         # err = json.dumps(ls).replace('\\', '\\\\')
-        err = f'''{errInfo}|{'|'.join(ls)}'''
+        err = '|'.join(ls)
         # self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        if status:
-            if self.resPublic["conditions"] > 5:
-                self.usPipe.upload(self.resPublic['aid'], conditions=0)
-            if self.resPublic["status"] == 2:
-                self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
-            elif self.resPublic["conditions"] == 5:
-                self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
+        if self.resPublic["conditions"] == 3:
+            self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
+        elif self.resPublic["conditions"] < 3:
+            self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
+        elif self.resPublic["conditions"] > 3:
+            self.usPipe.upload(self.resPublic['aid'], conditions=0)
     
+    # 进度条
+    def progress(self, info):
+        self.usPipe.upload(self.resPublic["aid"], progress=info)
+
     def urlButton(self, button=1):
         if self.driver.current_url not in self.allUrl:
             self.allUrl.append(self.driver.current_url)
@@ -608,7 +612,7 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
-
+        self.progress("5% 个人信息1 完成")
         return 0
 
     def personal2(self):
@@ -687,6 +691,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("10% 个人信息2 完成")
 
         return 0
 
@@ -794,6 +800,8 @@ class AllPage(AutoUs):
             except:
                 break
 
+        self.progress("15% 地址和电话页 完成")
+
         return 0
 
     def pptVisa(self):
@@ -872,6 +880,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("20% 护照页 完成" )
 
         return 0
 
@@ -1025,6 +1035,8 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("25% 旅行页 完成")
+
         return 0
 
     def travelCompanions(self):
@@ -1069,6 +1081,7 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("30% 旅行同伴页 完成")
         return 0
 
     def previousUSTravel(self):
@@ -1116,6 +1129,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("35% 以前美国之行 完成")
 
         return 0
 
@@ -1175,6 +1190,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("40% 美国联系人信息 完成")
 
         return 0
 
@@ -1263,17 +1280,25 @@ class AllPage(AutoUs):
                 ids.append(
                     ("ctl00_SiteContentPlaceHolder_FormView1_rblUS_OTHER_RELATIVE_IND_1", ""))
         elif self.resInfo["other_america_is"] == "Y":
-            ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblUS_IMMED_RELATIVE_IND_0", ""),
-                # 姓氏
-                ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_SURNAME", ""),
-                # 名字
-                ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_GIVEN_NAME", ""),
-                # 与您的关系
-                ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_TYPE", ""),
-                # 在美身份
-                ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_STATUS", ""),
-            ]
+            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_rblUS_IMMED_RELATIVE_IND_0")
+            immediate_family = json.loads(self.resInfo["immediate_family"])
+            """ [{"name":"CHOU","names":"HAONAN","relation":"C","identity":"P"}] """
+            for index, val in enumerate(immediate_family):
+                if index and self.old_page:
+                    self.Wait(
+                        f"ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl0{index - 1}_InsertButtonUSRelative")
+                ids += [
+                    # 姓氏
+                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_SURNAME", val["name"]),
+                    # 名字
+                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_GIVEN_NAME", val["names"]),
+                ]
+                seList += [
+                    # 与您的关系
+                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_TYPE", val["relation"]),
+                    # 在美身份
+                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_STATUS", val["identity"]),
+                ]
 
         self.waitIdSel(ids, seList)
         self.urlButton()
@@ -1285,6 +1310,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("45% 家庭/亲属页 完成")
 
         return 0
 
@@ -1380,6 +1407,8 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("50% 配偶页 完成")
+
         return 0
 
     def deceasedSpouse(self):
@@ -1409,6 +1438,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("50% 丧偶页 完成")
 
         return 0
 
@@ -1457,16 +1488,26 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("50% 离异页 完成")
+
         return 0
 
     def workEducation1(self):
         """ 工作教育 """
         print("工作教育")
+        over = False
         self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlPresentOccupation",
                           self.resWork["professional_types"])
         if self.resWork["professional_types"] == "N":
             self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxExplainOtherPresentOccupation",
                       self.resWork["professional_info"])
+            over = True
+        if self.resWork["professional_types"] == "O":
+            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxExplainOtherPresentOccupation",
+                      self.resWork["professional_info"])
+        if self.resWork["professional_types"] in ["H", "RT"]:
+            over = True
+        if over:
             self.urlButton()
             try:
                 errInfos = self.driver.find_element_by_id(
@@ -1554,6 +1595,8 @@ class AllPage(AutoUs):
             return 1
         except:
             pass
+
+        self.progress("55% 工作教育 完成")
 
         return 0
 
@@ -1711,6 +1754,8 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("60% 以前的工作/培训页 完成")
+
         return 0
 
     def workEducation3(self):
@@ -1743,6 +1788,11 @@ class AllPage(AutoUs):
         elif self.resWork["five_been_country_is"] == "Y":
             self.Wait(
                 "ctl00_SiteContentPlaceHolder_FormView1_rblCOUNTRIES_VISITED_IND_0")
+            five_been_country = json.loads(self.resWork["five_been_country"])
+            for index, val in enumerate(five_been_country):
+                if index and self.old_page:
+                    self.Wait(f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index-1}_InsertButtonCountriesVisited")
+                self.choiceSelect(f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index}_ddlCOUNTRIES_VISITED", val["name"])
 
             for index, value in enumerate(json.loads(self.resWork["five_been_country"])):
                 if index and self.old_page:
@@ -1833,6 +1883,8 @@ class AllPage(AutoUs):
         except:
             pass
 
+        self.progress("65% 补充页 完成")
+
         return 0
 
     def securityAndBackground(self):
@@ -1894,6 +1946,9 @@ class AllPage(AutoUs):
         for i in range(int(node[-1]), 6):
             self.urlButton(0)
             self.waitIdSel(idsDic[node[:-1] + str(i)])
+        
+        self.progress("70% 安全与背景页 完成")
+
         return 0
 
     def uploadPhoto(self):
@@ -1931,6 +1986,9 @@ class AllPage(AutoUs):
         ]
         self.urlButton(0)
         self.waitIdSel(ids)
+
+        self.progress("80% 上传照片页 完成")
+
         return 0
 
     def review(self):
@@ -1942,6 +2000,7 @@ class AllPage(AutoUs):
 
     def signCertify(self):
         """ 最后确认页面 """
+        self.progress("90% 审查页面 完成")
         print("最后确认页面")
         self.driver.execute_script("document.documentElement.scrollTop=910")
         self.Wait("ctl00_SiteContentPlaceHolder_FormView3_rblPREP_IND_1")
@@ -1958,6 +2017,7 @@ class AllPage(AutoUs):
             except: pass
             sleep(2)
         self.urlButton()
+        self.progress("95% 最后确认页面 完成")
         return 0
 
     def done(self):
@@ -1973,3 +2033,5 @@ class AllPage(AutoUs):
         self.usPipe.upload(self.resPublic["aid"], visa_status='2')
         self.renamePdf()
         print("page over...")
+        self.progress("100% 成功")
+        

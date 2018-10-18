@@ -39,14 +39,18 @@ class RunPayInfo:
 
             # 获取需要申请的人员信息
             self.usPay = AutoPay(data=self.usPipe.data, usPipe=self.usPipe)
-            if not self.usPay.res["register_is"]:
-                self.register()
-            self.usPay.payInfo()
+            if not 1:
+                if not self.usPay.res["register_is"]:
+                    self.register()
+                self.usPay.payInfo()
+            else:
+                self.usPay.groupAppointment()
 
 
 def main():
     r = RunPayInfo()
     while True:
+        # r.run()
         try:
             r.run()
         except Exception as e:

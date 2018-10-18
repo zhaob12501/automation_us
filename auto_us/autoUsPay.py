@@ -290,7 +290,7 @@ class AutoPay(AutoUs):
                     return
                 rela = relDic.get(relation, "Other")
                 self.Wait(
-                    xpath='//*[@id="j_id0:SiteTemplate:showPopUp"]/table/tbody/tr[2]/td[1]/select', text=rela)
+                    xpath='//*[@id="j_id0:SiteTemplate:showPopUp"]/table/tbody/tr[2]/td[1]/select', text="Other")
                 self.Wait("j_id0:SiteTemplate:showPopUp:j_id132",
                           self.resPublics[i]["aacode"])
                 self.Wait("j_id0:SiteTemplate:showPopUp:j_id144",
@@ -546,18 +546,26 @@ class AutoPay(AutoUs):
         self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id120"]/table/tbody/tr[14]/td/input[1]')
         print("取消成功")
 
-    def groupAppointment(self, group_email='', group_pwd=''):
-        group_email = "janice.fu@lettours.com"
-        group_pwd = "janice522"
-        self.email = group_email
-        self.group_pwd = group_pwd
-        self.login(self.group_pwd)
+    def groupAppointment(self, ):
+        group_email_info = self.usPipe.get_group_email(self.res["mpid"])
+        pwd = "5678tyui"
+        if group_email_info:
+            self.email = group_email_info["email"]
+            pwd = group_email_info["password"]
+        
+        self.login(pwd)
         self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
         # 中间操作
         self.middle()
         self.Wait(css="#summary", text=NC)
-        lens = len(self.driver.find_elements_by_css_selector("#summary > ul > li"))
-        [self.Wait(css="button") for _ in lens]
+        lis = self.driver.find_elements_by_css_selector("#summary > ul > li")
+        lens = len(lis)
+        for _ in range(lens):
+            self.Wait(css=".ui-icon-close:nth-child(1)")
+            self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
+        self.add_new_user()
+
+    def add_new_user(self):
         self.Wait(css='#create-user > span')
         self.Wait(css="select.formRelationship", text="Other")
         self.Wait(css=".requiredInput > .formDs160", text=self.resPublic["aacode"])
@@ -570,24 +578,38 @@ class AutoPay(AutoUs):
         self.Wait(css="#datepicker > input", text=f"{month}/{day}/{year}")
         country = "China"
         self.Wait(css='.requiredInput > .formCountryOfBirth', text=country)
-        self.Wait(css='#issuancePlace > span > .formNationality', text=country)
         self.Wait(css='.requiredInput > span > select', text=country)
+        self.Wait(css='#issuancePlace > span > .formNationality', text=country)
         self.Wait(css='.requiredInput > .formPassport', text=self.resInfo["passport_number"])
         year, month, day = self.resInfo["lssue_date"].split("-")
         self.Wait(css='.requiredInput > div > .formPassportDate', text=f"{month}/{day}/{year}")
         year, month, day = self.resInfo["expiration_date"].split("-")
         self.Wait(css='.requiredInput > div > .formPassportExpirationDate', text=f"{month}/{day}/{year}")
-        self.Wait(css='.requiredInput > .formPhone', text='+86' + self.resInfo["home_telphone"])
+        self.Wait(css='.requiredInput > .formMobilePhone', text='+86' + self.resInfo["home_telphone"])
         standby_phone = self.resInfo["tel"] if self.resInfo["tel"] else self.resInfo["company_phone"] if self.resInfo["company_phone"] else self.resInfo["home_telphone"]
         self.Wait(css='.requiredInput > .formPhone', text='+86' + standby_phone)
-        self.Wait(css='.requiredInput > .formEmail', text=group_email)
+        self.Wait(css='.requiredInput > .formEmail', text=self.email)
+        # 客户信息资料查看
+        self.driver.save_screenshot("usFile/info.png")
+        # self.driver.execute_script("$('#dialog-form').scrollTop(10)")
+        with open("usFile/info.png", "rb") as f:
+            img = {"file": ("info.png", f.read(), "image/png")}
+        url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+        res = requests.post(url, files=img).json()
+        self.usPipe.uploadOrder(self.res['id'], interview_img=res)
+        # 确认
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
         sleep(1)
-        errs = self.driver.find_elements("css selector", ".error > li")
-        if errs and self.driver.current_url == 'https://cgifederal.secure.force.com/adddependents':
-            self.selApp()
-            return
-        self.Wait(css='input.continue')
+        try:
+            errs = self.Wait(css=".error > li", text=NC)
+            if errs and self.driver.current_url == 'https://cgifederal.secure.force.com/adddependents':
+                self.selApp()
+                return
+        except:
+            pass
+
+        self.driver.find_element_by_css_selector("input[type='button']").click()
+        # self.driver.find_element_by_css_selector("input.continue").click()
         self.mail()
         self.receipt()
 
@@ -601,14 +623,36 @@ class AutoPay(AutoUs):
         self.middle()
         self.Wait(css=".ui-icon-pencil")
         self.Wait(css=".requiredInput > .formDs160", text=self.resPublic["aacode"])
-        # 预约信息图片
+        # 客户信息资料查看
         self.driver.save_screenshot("usFile/info.png")
-        info = self.driver.find_element("css selector", "#dialog-form > form > table")
-
-        self.Wait(css='.ui-button-text')
-        self.Wait(css='input.continue')
+        # self.driver.execute_script("$('#dialog-form').scrollTop(10)")
+        with open("usFile/info.png") as f:
+            img = {"file", ("info.png", f.read(), "image/png")}
+        url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+        res = requests.post(url, files=img).json()
+        self.usPipe.uploadOrder(self.res['id'], interview_img=res)
+        # 确认
+        self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
+        sleep(1)
+        self.driver.find_element_by_css_selector("input[type='button']").click()
         self.mail()
         self.receipt()
+
+    # 截图
+    # def get_png(self, path=None, locator=None, nofile=False):
+        # self.driver.save_screenshot(path)
+        # table = self.driver.find_element(*locator)
+        # left, top = table.location['x'], table.location['y']
+        # right, bottom = left + table.size['width'], top + table.size['height']
+        # img = Image.open(path)
+        # img.crop((left, top, right, bottom))
+        # img.save(path)
+        # if nofile:
+        #     return None
+        # else:
+        #     with open(path, 'wb') as f:
+        #         img = f.read()
+        #     return img
 
     # 中间操作
     def middle(self):
@@ -663,8 +707,8 @@ class AutoPay(AutoUs):
                     if tx.strip() == zx["address"].strip():
                         self.Wait(xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
                         break
-                self.Wait(
-                    xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
+                # self.Wait(
+                #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
             except:
                 self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
         elif zx["status"] == "N":
@@ -677,20 +721,29 @@ class AutoPay(AutoUs):
                 xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[3]/td[2]/input', text=zx["mail_province"])
             self.Wait(
                 xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[4]/td[2]/input', text=zx["mail_code"])
-            self.Wait(
-                xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
+            # self.Wait(
+            #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
+
+        self.Wait(xpath='//table[1]/tbody/tr[6]/td[2]/input')
         # 付款
-        print("付款")
-        self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+        # print("付款")
+        # self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
 
     # 付款填写收据 | 返回付款编号
     def receipt(self, code=''):
         if code:
+            print("付款填写收据")
             self.Wait(xpath='/html/body/div[2]/div[1]/a')
             self.Wait(css='dd> span > input', text=code)
             self.Wait(css='input.continue')
         else:
+            print("返回付款编号")
             self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
             self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
             self.Wait(css='#referenceCell', text=NC)
-            return self.driver.find_element_by_css_selector('#referenceCell').text
+            code =  self.driver.find_element_by_css_selector('#referenceCell').text
+            if code:
+                self.usPipe.uploadOrder(self.res["id"], interview_status=2, pay_code=code)
+                return code
+            else:
+                print('没有付款编号')
