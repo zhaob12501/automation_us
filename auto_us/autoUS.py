@@ -6,6 +6,7 @@
 @Last Modified by:   ZhaoBin 
 @Last Modified time: 2018-08-08 17:00:41
 """
+import glob
 import re
 
 import requests
@@ -17,8 +18,9 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
-from .settings import (BASEDIR, MON, MONTH, PASSWD, USER,
-                       NC, USERPHOTO, UsError, json, os, sleep, sys, strftime)
+
+from .settings import (BASEDIR, MON, MONTH, NC, PASSWD, USER, USERPHOTO,
+                       UsError, json, os, sleep, strftime, sys)
 from .yunsu import upload
 
 
@@ -44,19 +46,17 @@ class Base:
                 #----------页面打印版pdf下载-----------------
         appState = { 
             "recentDestinations": [ 
-            { 
-            "id": "Save as PDF", 
-            "origin": "local" 
-            } 
+                { 
+                    "id": "Save as PDF", 
+                    "origin": "local" 
+                } 
             ], 
             "selectedDestinationId": "Save as PDF", 
             "version": 2 
         } 
         #----------网页版pdf直接下载-----------------
         profile = {"plugins.plugins_list": 
-            [
-                {"enabled": False, "name": "Chrome PDF Viewer"}
-            ], # Disable Chrome's PDF Viewer
+            [{"enabled": False, "name": "Chrome PDF Viewer"}], # Disable Chrome's PDF Viewer
             "download.default_directory": download_dir , 
             "download.extensions_to_open": "applications/pdf",
             'printing.print_preview_sticky_settings.appState': json.dumps(appState),
@@ -203,7 +203,6 @@ class AutoUs(Base):
         self.resPublic, self.resInfo, self.resWork = data if data else (
             0, 0, 0)
         self.usPipe = usPipe
-        self.allUrl = []
         self.AAcode = "" if not self.resPublic else self.resPublic["aacode"]
         self.nodeDict = {}
         self.old_page = 1
@@ -235,7 +234,7 @@ class AutoUs(Base):
         #　识别验证码
         while self.driver.current_url == self.usUrl:
             try:
-                result = self.getCaptcha('c_defaultf_{self.baseID}uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
                 sleep(1)
                 self.Wait(f'{self.baseID}lnkNew')
@@ -260,7 +259,7 @@ class AutoUs(Base):
 
         while self.driver.current_url == self.usUrl:
             try:
-                result = self.getCaptcha('c_defaultf_{self.baseID}uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
                 self.Wait(f'{self.baseID}lnkRetrieve')
                 if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
@@ -433,8 +432,6 @@ class AutoUs(Base):
         self.usPipe.upload(self.resPublic["aid"], progress=info)
 
     def urlButton(self, button=1):
-        if self.driver.current_url not in self.allUrl:
-            self.allUrl.append(self.driver.current_url)
         if button:
             self.Wait(f"{self.baseID}UpdateButton3")
 
@@ -463,14 +460,22 @@ class AutoUs(Base):
         i = 1
         while i < 3:
             filename = f'''{self.resInfo["username"]}{self.resInfo["date_of_birth"].split("-")[0]}美国%s页_{self.AAcode if self.AAcode else self.resPublic["aacode"]}.pdf''' % dic[i]
-            print(os.path.join(BASEDIR, filename))
-            files = {filename: open(os.path.join(BASEDIR, 'usFile', filename), "rb")}
+            print(os.path.join(BASEDIR, 'usFile', filename))
+            with open(os.path.join(BASEDIR, 'usFile', filename), "rb") as f:
+                files = {filename: f.read()}
             data = {"aid": self.resInfo["aid"], "type": i}
             res = requests.post(url, data=data, files=files)
             print(res.json())
             if res.json()["status"] == 1:
                 i += 1
         self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
+        try:
+            for infile in glob.glob(os.path.join(BASEDIR, 'usFile\\*.pdf')):
+                if "AppointmentConfirmation" in infile:
+                    continue
+                os.remove(infile)
+        except:
+            pass        
         return 0
 
 
@@ -1119,7 +1124,7 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
                     (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
                 ]
-
+        ids = self.waitIdSel(ids)
         # 其它直系亲属
         if self.resInfo["other_america_is"] == "N":
             ids.append((f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
@@ -1827,7 +1832,7 @@ class AllPage(AutoUs):
         while "You have successfully" not in self.driver.page_source and "sign your application:" in self.driver.page_source:
             try:
                 self.driver.execute_script("document.documentElement.scrollTop=910")
-                result = self.getCaptcha("c_general_esign_signtheapplicationf_{self.baseID}defaultcaptcha_CaptchaImage")
+                result = self.getCaptcha(f"c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
                 self.Wait(f"{self.baseID}CodeTextBox", result)
                 self.Wait(f"{self.baseID}btnSignApp")
                 if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
@@ -1851,4 +1856,4 @@ class AllPage(AutoUs):
         self.renamePdf()
         print("page over...")
         self.progress("100% 成功")
-        
+

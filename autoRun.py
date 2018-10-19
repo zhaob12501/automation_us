@@ -10,6 +10,7 @@ from time import time
 from auto_us import AllPage, UsPipeline
 from auto_us.settings import (POOL, UsError, glob, json, os, sleep, strftime,
                               sys)
+
 st = 0
 
 
@@ -45,8 +46,6 @@ class UsRun:
 
     def sendInfo(self):
         ans = self.au.run
-        with open("all_url.json", "w+", encoding="utf8") as f:
-            json.dump(self.au.allUrl, f)
         if ans:
             return 1
         return 0
@@ -126,11 +125,9 @@ class UsRun:
 
 
     def __del__(self):
-        try:
-            if self.pool:
-                self.pool.close()
-        except:
-            pass
+        if hasattr(self, "pool"):
+            self.pool.close()
+            del self.pool
 
 
 def main():
