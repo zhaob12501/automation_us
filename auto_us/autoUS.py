@@ -193,18 +193,18 @@ class AutoUs(Base):
             resPublic:  数据库 dc_business_america_public_eng 信息
             resWork:    数据库 dc_business_america_work_eng 信息
     """
+    answer = "A"
+    usUrl = 'https://ceac.state.gov/GenNIV/Default.aspx'
+    payUrl = 'https://cgifederal.secure.force.com/'
+    baseID = "ctl00_SiteContentPlaceHolder_"
+
     def __init__(self, data=None, usPipe=None, noWin=False, noImg=False):
         super().__init__(noWin=noWin, noImg=noImg)
         self.resPublic, self.resInfo, self.resWork = data if data else (
             0, 0, 0)
         self.usPipe = usPipe
         self.allUrl = []
-        self.answer = "A"
         self.AAcode = "" if not self.resPublic else self.resPublic["aacode"]
-
-        self.usUrl = 'https://ceac.state.gov/GenNIV/Default.aspx'
-        self.payUrl = 'https://cgifederal.secure.force.com/'
-
         self.nodeDict = {}
         self.old_page = 1
 
@@ -230,24 +230,21 @@ class AutoUs(Base):
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_ucLocation_ddlLocation", self.resInfo['activity'])
-        # self.choiceSelect("ctl00_SiteContentPlaceHolder_ucLocation_ddlLocation", 'BEJ')
+        self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
+        # self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", 'BEJ')
         #　识别验证码
         while self.driver.current_url == self.usUrl:
             try:
-                result = self.getCaptcha(
-                    'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-                self.Wait(
-                    'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                result = self.getCaptcha('c_defaultf_{self.baseID}uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
                 sleep(1)
-                self.Wait('ctl00_SiteContentPlaceHolder_lnkNew')
+                self.Wait(f'{self.baseID}lnkNew')
             except:
                 pass
             sleep(2)
 
-        self.Wait("ctl00_SiteContentPlaceHolder_txtAnswer", self.answer)
-        self.Wait("ctl00_SiteContentPlaceHolder_btnContinue")
+        self.Wait(f"{self.baseID}txtAnswer", self.answer)
+        self.Wait(f"{self.baseID}btnContinue")
         return 0
 
     # 继续一个旧的签证
@@ -259,32 +256,25 @@ class AutoUs(Base):
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_ucLocation_ddlLocation", self.resInfo['activity'])
+        self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
 
         while self.driver.current_url == self.usUrl:
             try:
-                result = self.getCaptcha(
-                    'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-                self.Wait(
-                    'ctl00_SiteContentPlaceHolder_ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
-                self.Wait('ctl00_SiteContentPlaceHolder_lnkRetrieve')
-
+                result = self.getCaptcha('c_defaultf_{self.baseID}uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                self.Wait(f'{self.baseID}lnkRetrieve')
                 if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
             except: pass
             sleep(2)
 
-        self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_tbxApplicationID",
-                  self.resPublic['aacode'])
+        self.Wait(f"{self.baseID}ApplicationRecovery1_tbxApplicationID", self.resPublic['aacode'])
 
         ids = [
-            ("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_btnBarcodeSubmit", ""),
-            ("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_txbSurname",
-                self.resInfo['english_name'][:5]),
-            ('ctl00_SiteContentPlaceHolder_ApplicationRecovery1_txbDOBYear',
-                self.resInfo['date_of_birth'].split('-')[0]),
-            ('ctl00_SiteContentPlaceHolder_ApplicationRecovery1_txbAnswer', self.answer),
-            ('ctl00_SiteContentPlaceHolder_ApplicationRecovery1_btnRetrieve', ""),
+            (f"{self.baseID}ApplicationRecovery1_btnBarcodeSubmit", ""),
+            (f"{self.baseID}ApplicationRecovery1_txbSurname", self.resInfo['english_name'][:5]),
+            (f'{self.baseID}ApplicationRecovery1_txbDOBYear', self.resInfo['date_of_birth'].split('-')[0]),
+            (f'{self.baseID}ApplicationRecovery1_txbAnswer', self.answer),
+            (f'{self.baseID}ApplicationRecovery1_btnRetrieve', ""),
         ]
         for i in ids:
             self.Wait(i[0], i[1])
@@ -292,7 +282,7 @@ class AutoUs(Base):
             pass
 
         if noback:
-            self.Wait("ctl00_SiteContentPlaceHolder_UpdateButton3")
+            self.Wait(f"{self.baseID}UpdateButton3")
         else:
             self.comeBack()
 
@@ -304,6 +294,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Alias matches Given Name.": "曾用名有误",
             "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
             "Surnames has not been completed.": "姓氏未填",
             "Given Names has not been completed.": "名字未填",
@@ -445,7 +436,7 @@ class AutoUs(Base):
         if self.driver.current_url not in self.allUrl:
             self.allUrl.append(self.driver.current_url)
         if button:
-            self.Wait("ctl00_SiteContentPlaceHolder_UpdateButton3")
+            self.Wait(f"{self.baseID}UpdateButton3")
 
     def printPdf(self):
         self.driver.execute_script("window.print()")
@@ -536,77 +527,62 @@ class AllPage(AutoUs):
 
     def personal1(self):
         """ 填写个人信息页一 (Personal1) """
+        self.progress("0% 开始审核信息")
         print("填写个人信息页一 (Personal1)")
         # 拼音姓 拼音名 中文姓名
         ids = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_SURNAME",
-                self.resInfo['english_name']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_GIVEN_NAME",
-                self.resInfo['english_name_s']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_FULL_NAME_NATIVE",
-                self.resInfo['username'])
+            (f"{self.baseID}FormView1_tbxAPP_SURNAME", self.resInfo['english_name']),
+            (f"{self.baseID}FormView1_tbxAPP_GIVEN_NAME", self.resInfo['english_name_s']),
+            (f"{self.baseID}FormView1_tbxAPP_FULL_NAME_NATIVE", self.resInfo['username'])
         ]
 
         # 判断是否有曾用名
         if self.resInfo['former_name_is'] == "N":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblOtherNames_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblOtherNames_1", ""))
         elif self.resInfo['former_name_is'] == "Y":
-            """ ["QIQI"] """
             surNames = json.loads(self.resInfo['former_name'])
             names = json.loads(self.resInfo['former_names'])
             for index in range(len(names)):
                 if index and self.old_page:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_DListAlias_ctl0{index}_InsertButtonAlias", ""))
+                    ids.append((f"{self.baseID}FormView1_DListAlias_ctl0{index}_InsertButtonAlias", ""))
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblOtherNames_0", ""),
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_DListAlias_ctl0{index}_tbxSURNAME",
-                        surNames[index]),
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_DListAlias_ctl0{index}_tbxGIVEN_NAME",
-                        names[index])
+                    (f"{self.baseID}FormView1_rblOtherNames_0", ""),
+                    (f"{self.baseID}FormView1_DListAlias_ctl0{index}_tbxSURNAME", surNames[index]),
+                    (f"{self.baseID}FormView1_DListAlias_ctl0{index}_tbxGIVEN_NAME", names[index])
                 ]
 
         # 判断是否有中文姓名电码
         if self.resInfo['code_name_is'] == "N":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblTelecodeQuestion_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblTelecodeQuestion_1", ""))
         elif self.resInfo['code_name_is'] == "Y":
             lsCodeName = [
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblTelecodeQuestion_0", ""),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_TelecodeSURNAME",
-                    self.resInfo['code_name']),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_TelecodeGIVEN_NAME",
-                    self.resInfo['code_names'])
+                (f"{self.baseID}FormView1_rblTelecodeQuestion_0", ""),
+                (f"{self.baseID}FormView1_tbxAPP_TelecodeSURNAME", self.resInfo['code_name']),
+                (f"{self.baseID}FormView1_tbxAPP_TelecodeGIVEN_NAME", self.resInfo['code_names'])
             ]
             ids += lsCodeName
 
         year, mon, day = self.resInfo['date_of_birth'].split('-')
         # 判断性别-生日 日-月-年
         ids += [
-            (f"ctl00_SiteContentPlaceHolder_FormView1_rblAPP_GENDER_{0 if self.resInfo['sex'] == 'M' else 1}", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBDay", day),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxDOBYear", year),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBMonth", MONTH[mon]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_POB_CITY",
-                self.resInfo['date_of_address']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_POB_ST_PROVINCE",
-                self.resInfo['date_of_province'])
+            (f"{self.baseID}FormView1_rblAPP_GENDER_{0 if self.resInfo['sex'] == 'M' else 1}", ""),
+            (f"{self.baseID}FormView1_ddlDOBDay", day),
+            (f"{self.baseID}FormView1_tbxDOBYear", year),
+            (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[mon]),
+            (f"{self.baseID}FormView1_tbxAPP_POB_CITY", self.resInfo['date_of_address']),
+            (f"{self.baseID}FormView1_tbxAPP_POB_ST_PROVINCE", self.resInfo['date_of_province'])
         ]
 
         # 婚姻状况-国家
         seList = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlAPP_MARITAL_STATUS",
-                self.resInfo['marriage']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlAPP_POB_CNTRY",
-                self.resInfo['date_of_country'])
+            (f"{self.baseID}FormView1_ddlAPP_MARITAL_STATUS", self.resInfo['marriage']),
+            (f"{self.baseID}FormView1_ddlAPP_POB_CNTRY", self.resInfo['date_of_country'])
         ]
         self.waitIdSel(idlist=ids, selist=seList)
         self.urlButton()
 
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '个人信息一:')
             return 1
@@ -618,15 +594,19 @@ class AllPage(AutoUs):
     def personal2(self):
         """ 填写个人信息页二 (Personal2) """
         print("填写个人信息页一 (Personal2)")
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_FormView1_ddlAPP_NATL", self.resInfo['nationality'])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlAPP_NATL", self.resInfo['nationality'])
 
         self.AAcode = self.driver.find_element_by_id('ctl00_lblAppID').text
         with open("veri.json", "r+") as f:
             if self.AAcode not in f.read():
                 f.write(',\n')
-                veri = [self.resPublic["id"], self.AAcode, self.resInfo["english_name"]
-                        [:5], self.resInfo['date_of_birth'].split('-')[0], self.answer]
+                veri = [
+                    self.resPublic["id"], 
+                    self.AAcode, 
+                    self.resInfo["english_name"][:5], 
+                    self.resInfo['date_of_birth'].split('-')[0], 
+                    self.answer
+                    ]
                 json.dump(veri, f)
         self.usPipe.upload(self.resPublic['aid'], aacode=self.AAcode)
 
@@ -634,58 +614,46 @@ class AllPage(AutoUs):
 
         # 判断是否拥有其它国籍
         if self.resInfo['nationality_other_is'] == 'N':
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblAPP_OTH_NATL_IND_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblAPP_OTH_NATL_IND_1", ""))
         elif self.resInfo['nationality_other_is'] == 'Y':
             raise UsError("有其他国籍")
 
         # 判断是否持有其它国家的永久居住权身份
         if self.resInfo['nationality_live_is'] == 'N':
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblPermResOtherCntryInd_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblPermResOtherCntryInd_1", ""))
         elif self.resInfo['nationality_live_is'] == 'Y':
             raise UsError("持有其它国家的永久居住权身份")
 
         # 身份证号
         if self.resInfo['identity_number']:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_NATIONAL_ID",
-                        self.resInfo['identity_number']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_NATIONAL_ID", self.resInfo['identity_number']))
         # if self.resPublic['pay_personal_address']:
-        #     ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_NATIONAL_ID",
-        #                 self.resPublic['pay_personal_address']))
+        #     ids.append((f"{self.baseID}FormView1_tbxAPP_NATIONAL_ID", self.resPublic['pay_personal_address']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_NATIONAL_ID_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_NATIONAL_ID_NA", ""))
 
         # 美国安全号
         if self.resInfo['social_security_number']:
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_SSN1",
-                    self.resInfo['social_security_number'][:3]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_SSN2",
-                    self.resInfo['social_security_number'][3:5]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_SSN3",
-                    self.resInfo['social_security_number'][5:9]),
+                (f"{self.baseID}FormView1_tbxAPP_SSN1", self.resInfo['social_security_number'][:3]),
+                (f"{self.baseID}FormView1_tbxAPP_SSN2", self.resInfo['social_security_number'][3:5]),
+                (f"{self.baseID}FormView1_tbxAPP_SSN3", self.resInfo['social_security_number'][5:9]),
             ]
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_SSN_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_SSN_NA", ""))
 
         # 美国纳税人身份号
         if self.resInfo['taxpayer_number']:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_TAX_ID",
-                        self.resInfo['taxpayer_number']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_TAX_ID", self.resInfo['taxpayer_number']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_TAX_ID_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_TAX_ID_NA", ""))
 
         self.waitIdSel(idlist=ids)
 
         self.urlButton()
 
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '个人信息二:')
             return 1
@@ -701,99 +669,73 @@ class AllPage(AutoUs):
         print("地址和电话页")
         # 街道/城市
         ids = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_ADDR_LN1",
-                self.resInfo['live_address'][:40]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_ADDR_LN2",
-                self.resInfo['live_address'][40:]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_ADDR_CITY",
-                self.resInfo['m_city']),
+            (f"{self.baseID}FormView1_tbxAPP_ADDR_LN1", self.resInfo['live_address'][:40]),
+            (f"{self.baseID}FormView1_tbxAPP_ADDR_LN2", self.resInfo['live_address'][40:]),
+            (f"{self.baseID}FormView1_tbxAPP_ADDR_CITY", self.resInfo['m_city']),
         ]
         seList = []
         # 省份
         if self.resInfo['province']:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_ADDR_STATE", self.resInfo['province']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_ADDR_STATE", self.resInfo['province']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_ADDR_STATE_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_ADDR_STATE_NA", ""))
         # 邮编
         if self.resInfo['zip_code']:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_ADDR_POSTAL_CD", self.resInfo['zip_code']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_ADDR_POSTAL_CD", self.resInfo['zip_code']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_ADDR_POSTAL_CD_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_ADDR_POSTAL_CD_NA", ""))
 
         # 国家
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_FormView1_ddlCountry", self.resInfo['date_of_country'])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlCountry", self.resInfo['date_of_country'])
 
         # 邮寄地址
         if self.resInfo['mailing_address_is'] == 'Y':
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblMailingAddrSame_0", ""))
+            ids.append((f"{self.baseID}FormView1_rblMailingAddrSame_0", ""))
         elif self.resInfo['mailing_address_is'] == 'N':
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblMailingAddrSame_1", ""),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxMAILING_ADDR_LN1",
-                    self.resInfo['mailing_address'][:40]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxMAILING_ADDR_LN2",
-                    self.resInfo['mailing_address'][40:]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxMAILING_ADDR_CITY",
-                    self.resInfo['mailing_address_city']),
+                (f"{self.baseID}FormView1_rblMailingAddrSame_1", ""),
+                (f"{self.baseID}FormView1_tbxMAILING_ADDR_LN1", self.resInfo['mailing_address'][:40]),
+                (f"{self.baseID}FormView1_tbxMAILING_ADDR_LN2", self.resInfo['mailing_address'][40:]),
+                (f"{self.baseID}FormView1_tbxMAILING_ADDR_CITY", self.resInfo['mailing_address_city']),
             ]
             # 省份
             if self.resInfo['mailing_address_province']:
-                ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxMAILING_ADDR_STATE",
-                            self.resInfo['mailing_address_province']))
+                ids.append((f"{self.baseID}FormView1_tbxMAILING_ADDR_STATE", self.resInfo['mailing_address_province']))
             else:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbexMAILING_ADDR_STATE_NA", ""))
+                ids.append((f"{self.baseID}FormView1_cbexMAILING_ADDR_STATE_NA", ""))
             # 邮编
             if self.resInfo['mailing_address_zip']:
-                ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxMAILING_ADDR_POSTAL_CD",
-                            self.resInfo['mailing_address_zip']))
+                ids.append((f"{self.baseID}FormView1_tbxMAILING_ADDR_POSTAL_CD", self.resInfo['mailing_address_zip']))
             else:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbexMAILING_ADDR_POSTAL_CD_NA", ""))
+                ids.append((f"{self.baseID}FormView1_cbexMAILING_ADDR_POSTAL_CD_NA", ""))
 
-            seList.append(("ctl00_SiteContentPlaceHolder_FormView1_ddlMailCountry",
-                           self.resInfo['mailing_address_nationality']))
+            seList.append((f"{self.baseID}FormView1_ddlMailCountry", self.resInfo['mailing_address_nationality']))
 
         # 主要电话
-        ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_HOME_TEL",
-                    self.resInfo['home_telphone']))
+        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone']))
         # 次要电话
         if self.resInfo['tel']:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_MOBILE_TEL_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_MOBILE_TEL_NA", ""))
         # 工作电话
         if self.resInfo['company_phone']:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_BUS_TEL",
-                        self.resInfo['company_phone']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone']))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexAPP_BUS_TEL_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexAPP_BUS_TEL_NA", ""))
 
         self.waitIdSel(idlist=ids, selist=seList)
-        self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_EMAIL_ADDR",
-                  self.resInfo['home_email'])
+        self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", self.resInfo['home_email'])
         self.urlButton()
 
         while True:
             try:
-                errInfos = self.driver.find_element_by_id(
-                    "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+                errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
                 assert len(errInfos) > 1
                 if "Email Address is invalid. Verify the format is correct." == errInfos[1]:
-                    self.driver.find_element(
-                        "id", "ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_EMAIL_ADDR").clear()
-                    self.Wait(
-                        "ctl00_SiteContentPlaceHolder_FormView1_tbxAPP_EMAIL_ADDR", self.resInfo['home_email'])
-                    self.Wait("ctl00_SiteContentPlaceHolder_UpdateButton3")
+                    self.driver.find_element("id", f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR").clear()
+                    self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", self.resInfo['home_email'])
+                    self.Wait(f"{self.baseID}UpdateButton3")
                 else:
                     self.errJson(errInfos, '地址和电话:')
                     return 1
@@ -811,61 +753,48 @@ class AllPage(AutoUs):
         seList = []
         # 护照本编号「默认不填」
         if self.resInfo['passport_papers_number']:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_BOOK_NUM",
-                        self.resInfo['passport_papers_number']))
+            ids.append((f"{self.baseID}FormView1_tbxPPT_BOOK_NUM", self.resInfo['passport_papers_number']))
         else:
             ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexPPT_BOOK_NUM_NA", ""))
+                (f"{self.baseID}FormView1_cbexPPT_BOOK_NUM_NA", ""))
 
         iYear, iMon, iDay = self.resInfo['lssue_date'].split('-')
         eYear, eMon, eDay = self.resInfo['expiration_date'].split('-')
         print(eYear, eMon, eDay)
         ids += [
             #　护照类型/护照号
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_NUM",
-             self.resInfo['passport_number']),
-            # ("ctl00_SiteContentPlaceHolder_FormView1_cbexPPT_BOOK_NUM_NA", ""),
+            (f"{self.baseID}FormView1_tbxPPT_NUM", self.resInfo['passport_number']),
+            # (f"{self.baseID}FormView1_cbexPPT_BOOK_NUM_NA", ""),
             # 护照签发城市
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_ISSUED_IN_CITY",
-             self.resInfo['place_of_issue']),
+            (f"{self.baseID}FormView1_tbxPPT_ISSUED_IN_CITY", self.resInfo['place_of_issue']),
             # 护照签发省
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_ISSUED_IN_STATE",
-             self.resInfo['place_issue_province']),
+            (f"{self.baseID}FormView1_tbxPPT_ISSUED_IN_STATE", self.resInfo['place_issue_province']),
             # 护照 签发日期
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlPPT_TYPE",
-             self.resInfo['passport_category']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlPPT_ISSUED_DTEDay", iDay),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_ISSUEDYear", iYear),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlPPT_ISSUED_DTEMonth",
-             MONTH[iMon]),
+            (f"{self.baseID}FormView1_ddlPPT_TYPE", self.resInfo['passport_category']),
+            (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEDay", iDay),
+            (f"{self.baseID}FormView1_tbxPPT_ISSUEDYear", iYear),
+            (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEMonth", MONTH[iMon]),
             # 护照 失效日期
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlPPT_EXPIRE_DTEDay", eDay),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxPPT_EXPIREYear", eYear),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlPPT_EXPIRE_DTEMonth",
-             MONTH[eMon]),
+            (f"{self.baseID}FormView1_ddlPPT_EXPIRE_DTEDay", eDay),
+            (f"{self.baseID}FormView1_tbxPPT_EXPIREYear", eYear),
+            (f"{self.baseID}FormView1_ddlPPT_EXPIRE_DTEMonth", MONTH[eMon]),
         ]
 
         # 护照是否遗失或被盗过
         if self.resInfo['passport_loss'] == 'N':
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblLOST_PPT_IND_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblLOST_PPT_IND_1", ""))
         elif self.resInfo['passport_loss'] == 'Y':
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblLOST_PPT_IND_0", ""))
+            ids.append((f"{self.baseID}FormView1_rblLOST_PPT_IND_0", ""))
             for index, value in enumerate(json.loads(self.resInfo["passport_loss_yes"])):
                 if index and self.old_page:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlLostPPT_ctl0{index - 1}_InsertButtonLostPPT", ""))
+                    ids.append((f"{self.baseID}FormView1_dtlLostPPT_ctl0{index - 1}_InsertButtonLostPPT", ""))
                 # 是否记得护照号
                 if value["number"]:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlLostPPT_ctl0{index}_tbxLOST_PPT_NUM", value["number"]))
+                    ids.append((f"{self.baseID}FormView1_dtlLostPPT_ctl0{index}_tbxLOST_PPT_NUM", value["number"]))
                 else:  # 忘记了/未知的
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlLostPPT_ctl0{index}_cbxLOST_PPT_NUM_UNKN_IND", ""))
-                ids.append(
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlLostPPT_ctl0{index}_tbxLOST_PPT_EXPL", value["infos"]))
-                seList += [("ctl00_SiteContentPlaceHolder_FormView1_dtlLostPPT_ctl00_ddlLOST_PPT_NATL", value["office"])]
+                    ids.append((f"{self.baseID}FormView1_dtlLostPPT_ctl0{index}_cbxLOST_PPT_NUM_UNKN_IND", ""))
+                ids.append((f"{self.baseID}FormView1_dtlLostPPT_ctl0{index}_tbxLOST_PPT_EXPL", value["infos"]))
+                seList += [(f"{self.baseID}FormView1_dtlLostPPT_ctl00_ddlLOST_PPT_NATL", value["office"])]
                 ids = self.waitIdSel(ids)
 
         self.waitIdSel(selist=seList)
@@ -873,8 +802,7 @@ class AllPage(AutoUs):
         # self.choiceSelect(sel[0], sel[1])
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '护照:')
             return 1
@@ -893,35 +821,30 @@ class AllPage(AutoUs):
         purpose = json.loads(self.resPublic['america_purpose'])
         for index, value in enumerate(purpose):
             if index and self.old_page:
-                seList.append(
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dlPrincipalAppTravel_ctl0{index - 1}_InsertButtonAlias", ""))
+                seList.append((f"{self.baseID}FormView1_dlPrincipalAppTravel_ctl0{index - 1}_InsertButtonAlias", ""))
             seList += [
-                (f"ctl00_SiteContentPlaceHolder_FormView1_dlPrincipalAppTravel_ctl0{index}_ddlPurposeOfTrip", value["one"]),
-                (f"ctl00_SiteContentPlaceHolder_FormView1_dlPrincipalAppTravel_ctl0{index}_ddlOtherPurpose", value["two"]),
+                (f"{self.baseID}FormView1_dlPrincipalAppTravel_ctl0{index}_ddlPurposeOfTrip", value["one"]),
+                (f"{self.baseID}FormView1_dlPrincipalAppTravel_ctl0{index}_ddlOtherPurpose", value["two"]),
             ]
             seList = self.waitIdSel(selist=seList)
         sleep(1)
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_FormView1_ddlWhoIsPaying", self.resPublic['travel_cost_pay'])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlWhoIsPaying", self.resPublic['travel_cost_pay'])
         if self.resPublic['travel_plans_is'] == "N":
             year, mon, day = self.resPublic['arrive_time'].split('-')
             try:
-                self.driver.find_element_by_id("ctl00_SiteContentPlaceHolder_FormView1_rblSpecificTravel_1").click()
+                self.driver.find_element_by_id(f"{self.baseID}FormView1_rblSpecificTravel_1").click()
             except:
                 pass
             ids = [
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlTRAVEL_DTEDay", day),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxTRAVEL_DTEYear", year),
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlTRAVEL_DTEMonth",
-                 MONTH[mon]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxTRAVEL_LOS",
-                    self.resPublic['stay_time']),
+                (f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", day),
+                (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
+                (f"{self.baseID}FormView1_ddlTRAVEL_DTEMonth", MONTH[mon]),
+                (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
             ]
             ids = self.waitIdSel(ids)
 
             seList = [
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlTRAVEL_LOS_CD",
-                    self.resPublic['stay_times']),
+                (f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times']),
             ]
             seList = self.waitIdSel(selist=seList)
         elif self.resPublic['travel_plans_is'] == "Y":
@@ -930,105 +853,76 @@ class AllPage(AutoUs):
             aYear, aMon, aDay = plans["arrive_time"].split('-')
             dYear, dMon, dDay = plans["leave_time"].split('-')
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblSpecificTravel_0", ""),
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlARRIVAL_US_DTEDay", aDay),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxARRIVAL_US_DTEYear", aYear),
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlARRIVAL_US_DTEMonth",
-                 MONTH[aMon]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxArriveFlight",
-                 plans["arrive_fly"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxArriveCity",
-                 plans["arrive_city"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlDEPARTURE_US_DTEDay", dDay),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxDEPARTURE_US_DTEYear", dYear),
-                ("ctl00_SiteContentPlaceHolder_FormView1_ddlDEPARTURE_US_DTEMonth",
-                 MONTH[dMon]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxDepartFlight",
-                 plans["leave_fly"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxDepartCity",
-                 plans["leave_city"]),
+                (f"{self.baseID}FormView1_rblSpecificTravel_0", ""),
+                (f"{self.baseID}FormView1_ddlARRIVAL_US_DTEDay", aDay),
+                (f"{self.baseID}FormView1_tbxARRIVAL_US_DTEYear", aYear),
+                (f"{self.baseID}FormView1_ddlARRIVAL_US_DTEMonth", MONTH[aMon]),
+                (f"{self.baseID}FormView1_tbxArriveFlight", plans["arrive_fly"]),
+                (f"{self.baseID}FormView1_tbxArriveCity", plans["arrive_city"]),
+                (f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEDay", dDay),
+                (f"{self.baseID}FormView1_tbxDEPARTURE_US_DTEYear", dYear),
+                (f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEMonth", MONTH[dMon]),
+                (f"{self.baseID}FormView1_tbxDepartFlight", plans["leave_fly"]),
+                (f"{self.baseID}FormView1_tbxDepartCity", plans["leave_city"]),
             ]
             for index, value in enumerate(json.loads(self.resPublic["plans_access"])):
                 if index and self.old_page:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlTravelLoc_ctl0{index - 1}_InsertButtonTravelLoc", ""))
-                ids.append(
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlTravelLoc_ctl0{index}_tbxSPECTRAVEL_LOCATION", value["city"]))
+                    ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index - 1}_InsertButtonTravelLoc", ""))
+                ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index}_tbxSPECTRAVEL_LOCATION", value["city"]))
         
         # 在美停留期间的住址
         ids += [
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxStreetAddress1",
-                self.resPublic['stay_address'][:40]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxStreetAddress2",
-                self.resPublic['stay_address'][40:]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxCity",
-                self.resPublic['stay_city']),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbZIPCode",
-                self.resPublic['stay_zip']),
+            (f"{self.baseID}FormView1_tbxStreetAddress1", self.resPublic['stay_address'][:40]),
+            (f"{self.baseID}FormView1_tbxStreetAddress2", self.resPublic['stay_address'][40:]),
+            (f"{self.baseID}FormView1_tbxCity", self.resPublic['stay_city']),
+            (f"{self.baseID}FormView1_tbZIPCode", self.resPublic['stay_zip']),
         ]
 
         if self.resPublic['travel_cost_pay'] == 'O':
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerSurname",
-                    self.resPublic['pay_personal_name']),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerGivenName",
-                    self.resPublic['pay_personal_names']),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerPhone",
-                    self.resPublic['pay_personal_phone']),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerPhone",
-                    self.resPublic['pay_personal_phone']),
+                (f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']),
+                (f"{self.baseID}FormView1_tbxPayerGivenName", self.resPublic['pay_personal_names']),
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
             ]
             if self.resPublic['pay_personal_email']:
-                ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxPAYER_EMAIL_ADDR",
-                            self.resPublic['pay_personal_email']))
+                ids.append((f"{self.baseID}FormView1_tbxPAYER_EMAIL_ADDR", self.resPublic['pay_personal_email']))
             else:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbxDNAPAYER_EMAIL_ADDR_NA", ""))
+                ids.append((f"{self.baseID}FormView1_cbxDNAPAYER_EMAIL_ADDR_NA", ""))
             # 与您的关系
-            # self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlPayerRelationship", self.resPublic['pay_personal_relation'])
-            s = Select(self.driver.find_element_by_id("ctl00_SiteContentPlaceHolder_FormView1_ddlPayerRelationship"))
+            # self.choiceSelect(f"{self.baseID}FormView1_ddlPayerRelationship", self.resPublic['pay_personal_relation'])
+            s = Select(self.driver.find_element_by_id(f"{self.baseID}FormView1_ddlPayerRelationship"))
             s.select_by_value(self.resPublic['pay_personal_relation'])
             # 为您支付旅行费用的一方，其地址是否与您的家庭地址或邮寄地址相同？
             if self.resPublic['pay_personal_address_is'] == 'Y':
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblPayerAddrSameAsInd_0", ""))
+                ids.append((f"{self.baseID}FormView1_rblPayerAddrSameAsInd_0", ""))
             elif self.resPublic['pay_personal_address_is'] == 'N':
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblPayerAddrSameAsInd_1", ""),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerStreetAddress1",
-                        self.resPublic['pay_personal_address'][:40]),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerStreetAddress2",
-                        self.resPublic['pay_personal_address'][40:]),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerCity",
-                        self.resPublic['pay_personal_city']),
+                    (f"{self.baseID}FormView1_rblPayerAddrSameAsInd_1", ""),
+                    (f"{self.baseID}FormView1_tbxPayerStreetAddress1", self.resPublic['pay_personal_address'][:40]),
+                    (f"{self.baseID}FormView1_tbxPayerStreetAddress2", self.resPublic['pay_personal_address'][40:]),
+                    (f"{self.baseID}FormView1_tbxPayerCity", self.resPublic['pay_personal_city']),
                 ]
                 if self.resPublic['pay_personal_province']:
-                    ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerStateProvince",
-                                self.resPublic['pay_personal_province']))
+                    ids.append((f"{self.baseID}FormView1_tbxPayerStateProvince",self.resPublic['pay_personal_province']))
                 else:
-                    ids.append(
-                        ("ctl00_SiteContentPlaceHolder_FormView1_cbxDNAPayerStateProvince", ""))
+                    ids.append((f"{self.baseID}FormView1_cbxDNAPayerStateProvince", ""))
                 if self.resPublic['pay_personal_zip']:
-                    ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxPayerPostalZIPCode",
-                                self.resPublic['pay_personal_zip']))
+                    ids.append((f"{self.baseID}FormView1_tbxPayerPostalZIPCode",self.resPublic['pay_personal_zip']))
                 else:
-                    ids.append(
-                        ("ctl00_SiteContentPlaceHolder_FormView1_cbxDNAPayerPostalZIPCode", ""))
+                    ids.append((f"{self.baseID}FormView1_cbxDNAPayerPostalZIPCode", ""))
 
                 ids = self.waitIdSel(ids)
-                self.choiceSelect(
-                    "ctl00_SiteContentPlaceHolder_FormView1_ddlPayerCountry", self.resPublic['pay_personal_country'])
+                self.choiceSelect(f"{self.baseID}FormView1_ddlPayerCountry", self.resPublic['pay_personal_country'])
 
         ids = self.waitIdSel(ids)
 
         # 州
-        self.choiceSelect(
-            "ctl00_SiteContentPlaceHolder_FormView1_ddlTravelState", self.resPublic['stay_province'])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlTravelState", self.resPublic['stay_province'])
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '旅行:')
             return 1
@@ -1043,38 +937,27 @@ class AllPage(AutoUs):
         """ 旅行同伴页 """
         print('旅行同伴页')
         if self.resPublic["associate_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblOtherPersonsTravelingWithYou_1")
+            self.Wait(f"{self.baseID}FormView1_rblOtherPersonsTravelingWithYou_1")
         elif self.resPublic["associate_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblOtherPersonsTravelingWithYou_0")
+            self.Wait(f"{self.baseID}FormView1_rblOtherPersonsTravelingWithYou_0")
             # 您是否作为一个团队或者组织的成员去旅行？
             if self.resPublic["associate_tuxedo_is"] == 'Y':
-                self.Wait(
-                    "ctl00_SiteContentPlaceHolder_FormView1_rblGroupTravel_0", "")
-                self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxGroupName",
-                          self.resPublic["associate_tuxedo_name"])
+                self.Wait(f"{self.baseID}FormView1_rblGroupTravel_0", "")
+                self.Wait(f"{self.baseID}FormView1_tbxGroupName", self.resPublic["associate_tuxedo_name"])
             elif self.resPublic["associate_tuxedo_is"] == 'N':
-                self.Wait(
-                    "ctl00_SiteContentPlaceHolder_FormView1_rblGroupTravel_1")
+                self.Wait(f"{self.baseID}FormView1_rblGroupTravel_1")
                 # 同行人姓(拼音) 、同行人名(拼音) 、 关系
-                associate = json.loads(
-                    self.resPublic["associate_name_relation"])
+                associate = json.loads(self.resPublic["associate_name_relation"])
                 for index, value in enumerate(associate):
                     if index and self.old_page:
-                        self.Wait(
-                            f"ctl00_SiteContentPlaceHolder_FormView1_dlTravelCompanions_ctl0{index - 1}_InsertButtonPrincipalPOT")
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dlTravelCompanions_ctl0{index}_tbxSurname", value['name'])
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dlTravelCompanions_ctl0{index}_tbxGivenName", value['names'])
-                    self.choiceSelect(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dlTravelCompanions_ctl0{index}_ddlTCRelationship", value['relation'][0])
+                        self.Wait(f"{self.baseID}FormView1_dlTravelCompanions_ctl0{index - 1}_InsertButtonPrincipalPOT")
+                    self.Wait(f"{self.baseID}FormView1_dlTravelCompanions_ctl0{index}_tbxSurname", value['name'])
+                    self.Wait(f"{self.baseID}FormView1_dlTravelCompanions_ctl0{index}_tbxGivenName", value['names'])
+                    self.choiceSelect(f"{self.baseID}FormView1_dlTravelCompanions_ctl0{index}_ddlTCRelationship", value['relation'][0])
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '同行人:')
             return 1
@@ -1089,41 +972,33 @@ class AllPage(AutoUs):
         print("以前美国之行")
         # 您是否曾经在美国停留过？
         if self.resPublic["old_stay_is"] == 'Y':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_0")
         elif self.resPublic["old_stay_is"] == 'N':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_1")
 
         # 您是否曾经获得过美国签证?
         if self.resPublic["old_visa_is"] == 'Y':
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_0")
         elif self.resPublic["old_visa_is"] == 'N':
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_1")
 
         # 您被拒签过吗？ 或在入境口岸被拒入境，或被撤销入境申请？
         if self.resPublic["old_visa_refused_is"] == 'Y':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_0")
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_REFUSED_EXPL", self.resPublic['old_visa_refused_info'])
+            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_REFUSED_IND_0")
+            self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_REFUSED_EXPL", self.resPublic['old_visa_refused_info'])
         elif self.resPublic["old_visa_refused_is"] == 'N':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_REFUSED_IND_1")
 
         # 曾有人在公民及移民服务局为您申请过移民吗？
         if self.resPublic["old_visa_emigrate_is"] == 'Y':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_0")
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_tbxIV_PETITION_EXPL", self.resPublic['old_visa_emigrate_info'])
+            self.Wait(f"{self.baseID}FormView1_rblIV_PETITION_IND_0")
+            self.Wait(f"{self.baseID}FormView1_tbxIV_PETITION_EXPL", self.resPublic['old_visa_emigrate_info'])
         elif self.resPublic["old_visa_emigrate_is"] == 'N':
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblIV_PETITION_IND_1")
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '以往赴美:')
             return 1
@@ -1137,54 +1012,40 @@ class AllPage(AutoUs):
     def usContact(self):
         """ 美国联系人信息 """
         print("美国联系人信息")
-        self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlUS_POC_REL_TO_APP",
-                          self.resPublic["contact_relation"])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlUS_POC_REL_TO_APP", self.resPublic["contact_relation"])
 
         ids = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_ADDR_LN1",
-                self.resPublic["contact_address"][:40]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_ADDR_LN2",
-                self.resPublic["contact_address"][40:]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_ADDR_CITY",
-                self.resPublic["contact_city"]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_ADDR_POSTAL_CD",
-                self.resPublic["contact_zip"]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_HOME_TEL",
-                self.resPublic["contact_phone"]),
+            (f"{self.baseID}FormView1_tbxUS_POC_ADDR_LN1", self.resPublic["contact_address"][:40]),
+            (f"{self.baseID}FormView1_tbxUS_POC_ADDR_LN2", self.resPublic["contact_address"][40:]),
+            (f"{self.baseID}FormView1_tbxUS_POC_ADDR_CITY", self.resPublic["contact_city"]),
+            (f"{self.baseID}FormView1_tbxUS_POC_ADDR_POSTAL_CD", self.resPublic["contact_zip"]),
+            (f"{self.baseID}FormView1_tbxUS_POC_HOME_TEL", self.resPublic["contact_phone"]),
 
         ]
 
         if self.resPublic["contact_email"]:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_EMAIL_ADDR",
-                        self.resPublic["contact_email"]))
+            ids.append((f"{self.baseID}FormView1_tbxUS_POC_EMAIL_ADDR", self.resPublic["contact_email"]))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbexUS_POC_EMAIL_ADDR_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbexUS_POC_EMAIL_ADDR_NA", ""))
 
         if self.resPublic["contact_name"] and self.resPublic["contact_names"]:
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_cbxUS_POC_ORG_NA_IND")
+            self.Wait(f"{self.baseID}FormView1_cbxUS_POC_ORG_NA_IND")
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_SURNAME",
-                    self.resPublic["contact_name"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_GIVEN_NAME",
-                    self.resPublic["contact_names"]),
+                (f"{self.baseID}FormView1_tbxUS_POC_SURNAME", self.resPublic["contact_name"]),
+                (f"{self.baseID}FormView1_tbxUS_POC_GIVEN_NAME", self.resPublic["contact_names"]),
             ]
         else:
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_cbxUS_POC_NAME_NA")
+            self.Wait(f"{self.baseID}FormView1_cbxUS_POC_NAME_NA")
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxUS_POC_ORGANIZATION",
-                    self.resPublic["contact_group_name"])
+                (f"{self.baseID}FormView1_tbxUS_POC_ORGANIZATION", self.resPublic["contact_group_name"])
             ]
 
         sleep(1)
         self.waitIdSel(ids)
-        self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlUS_POC_ADDR_STATE",
-                          self.resPublic["contact_province"])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlUS_POC_ADDR_STATE", self.resPublic["contact_province"])
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '美国联系人信息:')
             return 1
@@ -1203,108 +1064,92 @@ class AllPage(AutoUs):
         # 父亲
         if not (self.resInfo['father_name'] or self.resInfo['father_names']):
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxFATHER_SURNAME_UNK_IND", ""),
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxFATHER_GIVEN_NAME_UNK_IND", ""),
+                (f"{self.baseID}FormView1_cbxFATHER_SURNAME_UNK_IND", ""),
+                (f"{self.baseID}FormView1_cbxFATHER_GIVEN_NAME_UNK_IND", ""),
             ]
         else:
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxFATHER_SURNAME",
-                    self.resInfo["father_name"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxFATHER_GIVEN_NAME",
-                    self.resInfo["father_names"]),
+                (f"{self.baseID}FormView1_tbxFATHER_SURNAME", self.resInfo["father_name"]),
+                (f"{self.baseID}FormView1_tbxFATHER_GIVEN_NAME", self.resInfo["father_names"]),
             ]
             if not self.resInfo["father_birth"]:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbxFATHER_DOB_UNK_IND", ""))
+                ids.append((f"{self.baseID}FormView1_cbxFATHER_DOB_UNK_IND", ""))
             else:
                 year, month, day = self.resInfo["father_birth"].split("-")
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_tbxFathersDOBYear", year),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlFathersDOBDay", day),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlFathersDOBMonth",
+                    (f"{self.baseID}FormView1_tbxFathersDOBYear", year),
+                    (f"{self.baseID}FormView1_ddlFathersDOBDay", day),
+                    (f"{self.baseID}FormView1_ddlFathersDOBMonth",
                      MONTH[month]),
                 ]
 
             if self.resInfo["father_america_is"] == "N":
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblFATHER_LIVE_IN_US_IND_1", ""))
+                ids.append((f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_1", ""))
             elif self.resInfo["father_america_is"] == "Y":
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblFATHER_LIVE_IN_US_IND_0", ""),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlFATHER_US_STATUS",
-                        self.resInfo["father_america_identity"])
+                    (f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_0", ""),
+                    (f"{self.baseID}FormView1_ddlFATHER_US_STATUS", self.resInfo["father_america_identity"])
                 ]
         ids = self.waitIdSel(ids)
         # 母亲
         if not (self.resInfo['mother_name'] or self.resInfo['mother_names']):
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxMOTHER_SURNAME_UNK_IND", ""),
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxMOTHER_GIVEN_NAME_UNK_IND", ""),
+                (f"{self.baseID}FormView1_cbxMOTHER_SURNAME_UNK_IND", ""),
+                (f"{self.baseID}FormView1_cbxMOTHER_GIVEN_NAME_UNK_IND", ""),
             ]
         else:
             ids += [
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxMOTHER_SURNAME",
-                    self.resInfo["mother_name"]),
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxMOTHER_GIVEN_NAME",
-                    self.resInfo["mother_names"]),
+                (f"{self.baseID}FormView1_tbxMOTHER_SURNAME", self.resInfo["mother_name"]),
+                (f"{self.baseID}FormView1_tbxMOTHER_GIVEN_NAME", self.resInfo["mother_names"]),
             ]
             if not self.resInfo["mother_birth"]:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbxMOTHER_DOB_UNK_IND", ""))
+                ids.append((f"{self.baseID}FormView1_cbxMOTHER_DOB_UNK_IND", ""))
             else:
                 year, month, day = self.resInfo["mother_birth"].split("-")
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_tbxMothersDOBYear", year),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlMothersDOBDay", day),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlMothersDOBMonth",
+                    (f"{self.baseID}FormView1_tbxMothersDOBYear", year),
+                    (f"{self.baseID}FormView1_ddlMothersDOBDay", day),
+                    (f"{self.baseID}FormView1_ddlMothersDOBMonth",
                      MONTH[month]),
                 ]
             if self.resInfo["mother_america_is"] == "N":
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblMOTHER_LIVE_IN_US_IND_1", ""))
+                ids.append((f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_1", ""))
             elif self.resInfo["mother_america_is"] == "Y":
                 ids += [
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
-                    ("ctl00_SiteContentPlaceHolder_FormView1_ddlMOTHER_US_STATUS",
-                        self.resInfo["mother_america_identity"])
+                    (f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
+                    (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
                 ]
 
         # 其它直系亲属
         if self.resInfo["other_america_is"] == "N":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
             if self.resInfo["others_america_is"] == "Y":
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblUS_OTHER_RELATIVE_IND_0", ""))
+                ids.append((f"{self.baseID}FormView1_rblUS_OTHER_RELATIVE_IND_0", ""))
             elif self.resInfo["others_america_is"] == "N":
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_rblUS_OTHER_RELATIVE_IND_1", ""))
+                ids.append((f"{self.baseID}FormView1_rblUS_OTHER_RELATIVE_IND_1", ""))
         elif self.resInfo["other_america_is"] == "Y":
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_rblUS_IMMED_RELATIVE_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_0")
             immediate_family = json.loads(self.resInfo["immediate_family"])
-            """ [{"name":"CHOU","names":"HAONAN","relation":"C","identity":"P"}] """
             for index, val in enumerate(immediate_family):
                 if index and self.old_page:
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl0{index - 1}_InsertButtonUSRelative")
+                    self.Wait(f"{self.baseID}FormView1_dlUSRelatives_ctl0{index - 1}_InsertButtonUSRelative")
                 ids += [
                     # 姓氏
-                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_SURNAME", val["name"]),
+                    (f"{self.baseID}FormView1_dlUSRelatives_ctl00_tbxUS_REL_SURNAME", val["name"]),
                     # 名字
-                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_tbxUS_REL_GIVEN_NAME", val["names"]),
+                    (f"{self.baseID}FormView1_dlUSRelatives_ctl00_tbxUS_REL_GIVEN_NAME", val["names"]),
                 ]
                 seList += [
                     # 与您的关系
-                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_TYPE", val["relation"]),
+                    (f"{self.baseID}FormView1_dlUSRelatives_ctl00_ddlUS_REL_TYPE", val["relation"]),
                     # 在美身份
-                    ("ctl00_SiteContentPlaceHolder_FormView1_dlUSRelatives_ctl00_ddlUS_REL_STATUS", val["identity"]),
+                    (f"{self.baseID}FormView1_dlUSRelatives_ctl00_ddlUS_REL_STATUS", val["identity"]),
                 ]
 
         self.waitIdSel(ids, seList)
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/亲属:')
             return 1
@@ -1334,32 +1179,25 @@ class AllPage(AutoUs):
         year, month, day = self.resInfo["spouse_birth"].split("-")
         ids = [
             # 配偶姓氏
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxSpouseSurname",
-                self.resInfo["spouse_name"]),
+            (f"{self.baseID}FormView1_tbxSpouseSurname", self.resInfo["spouse_name"]),
             # 配偶名字
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxSpouseGivenName",
-                self.resInfo["spouse_names"]),
+            (f"{self.baseID}FormView1_tbxSpouseGivenName", self.resInfo["spouse_names"]),
             # 配偶生日: 年
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxDOBYear", year),
+            (f"{self.baseID}FormView1_tbxDOBYear", year),
             # 配偶出生城市
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxSpousePOBCity",
-                self.resInfo["spouse_birth_city"]),
+            (f"{self.baseID}FormView1_tbxSpousePOBCity", self.resInfo["spouse_birth_city"]),
             # 配偶生日: 日
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBDay", day),
+            (f"{self.baseID}FormView1_ddlDOBDay", day),
             # 配偶生日: 月
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBMonth",
-             MONTH[month]),
+            (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[month]),
         ]
         seList = [
             # 配偶的所属国家/地区（国籍）(比如：中国大陆=“China”)
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlSpouseNatDropDownList",
-                self.resInfo["spouse_nation"]),
+            (f"{self.baseID}FormView1_ddlSpouseNatDropDownList", self.resInfo["spouse_nation"]),
             # 配偶的出生国家/地区
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlSpousePOBCountry",
-                self.resInfo["spouse_birth_country"]),
+            (f"{self.baseID}FormView1_ddlSpousePOBCountry", self.resInfo["spouse_birth_country"]),
             # 配偶的联系地址
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlSpouseAddressType",
-                self.resInfo["spouse_address_select"]),
+            (f"{self.baseID}FormView1_ddlSpouseAddressType", self.resInfo["spouse_address_select"]),
         ]
         ids = self.waitIdSel(ids, seList)
         seList = []
@@ -1367,40 +1205,31 @@ class AllPage(AutoUs):
         if self.resInfo["spouse_address_select"] == "O":
             ids += [
                 # 街道地址（第一行）
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxSPOUSE_ADDR_LN1",
-                    self.resInfo["spouse_address"][:40]),
+                (f"{self.baseID}FormView1_tbxSPOUSE_ADDR_LN1", self.resInfo["spouse_address"][:40]),
                 # 街道地址（第二行）
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxSPOUSE_ADDR_LN2",
-                    self.resInfo["spouse_address"][40:]),
+                (f"{self.baseID}FormView1_tbxSPOUSE_ADDR_LN2", self.resInfo["spouse_address"][40:]),
                 # 城市
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxSPOUSE_ADDR_CITY",
-                    self.resInfo["spouse_address_city"]),
+                (f"{self.baseID}FormView1_tbxSPOUSE_ADDR_CITY", self.resInfo["spouse_address_city"]),
             ]
             if self.resInfo["spouse_address_province"]:
                 # 州/省
-                ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxSPOUSE_ADDR_STATE",
-                            self.resInfo["spouse_address_province"]))
+                ids.append((f"{self.baseID}FormView1_tbxSPOUSE_ADDR_STATE", self.resInfo["spouse_address_province"]))
             else:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbexSPOUSE_ADDR_STATE_NA", ""))
+                ids.append((f"{self.baseID}FormView1_cbexSPOUSE_ADDR_STATE_NA", ""))
 
             if self.resInfo["spouse_address_code"]:
                 # 邮编
-                ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxSPOUSE_ADDR_POSTAL_CD",
-                            self.resInfo["spouse_address_code"]))
+                ids.append((f"{self.baseID}FormView1_tbxSPOUSE_ADDR_POSTAL_CD", self.resInfo["spouse_address_code"]))
             else:
-                ids.append(
-                    ("ctl00_SiteContentPlaceHolder_FormView1_cbexSPOUSE_ADDR_POSTAL_CD_NA", ""))
+                ids.append((f"{self.baseID}FormView1_cbexSPOUSE_ADDR_POSTAL_CD_NA", ""))
             # 国家
-            seList.append(("ctl00_SiteContentPlaceHolder_FormView1_ddlSPOUSE_ADDR_CNTRY",
-                           self.resInfo["spouse_address_country"]))
+            seList.append((f"{self.baseID}FormView1_ddlSPOUSE_ADDR_CNTRY", self.resInfo["spouse_address_country"]))
 
         self.waitIdSel(ids, seList)
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/配偶:')
             return 1
@@ -1415,24 +1244,23 @@ class AllPage(AutoUs):
         """ 丧偶 """
         year, month, day = self.resInfo["spouse_birth"].split("-")
         ids = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxSURNAME", self.resInfo["spouse_name"]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxGIVEN_NAME", self.resInfo["spouse_names"]),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBDay", day),
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxDOBYear", year),
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlDOBMonth", MONTH[month]),
+            (f"{self.baseID}FormView1_tbxSURNAME", self.resInfo["spouse_name"]),
+            (f"{self.baseID}FormView1_tbxGIVEN_NAME", self.resInfo["spouse_names"]),
+            (f"{self.baseID}FormView1_ddlDOBDay", day),
+            (f"{self.baseID}FormView1_tbxDOBYear", year),
+            (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[month]),
         ]
         ids = self.waitIdSel(ids)
-        self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlSpouseNatDropDownList", self.resInfo["spouse_birth_country"])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlSpouseNatDropDownList", self.resInfo["spouse_birth_country"])
         if self.resInfo["spouse_birth_city"]:
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxSpousePOBCity", self.resInfo["spouse_birth_city"])
+            self.Wait(f"{self.baseID}FormView1_tbxSpousePOBCity", self.resInfo["spouse_birth_city"])
         else:
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_cbxSPOUSE_POB_CITY_NA")
-        self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlSpousePOBCountry", self.resInfo["spouse_birth_country"])
+            self.Wait(f"{self.baseID}FormView1_cbxSPOUSE_POB_CITY_NA")
+        self.choiceSelect(f"{self.baseID}FormView1_ddlSpousePOBCountry", self.resInfo["spouse_birth_country"])
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/配偶「丧偶」:')
             return 1
@@ -1446,10 +1274,10 @@ class AllPage(AutoUs):
     def prevSpouse(self):
         ''' 离异 '''
         print("离异人数", self.resInfo["spouse_former_count"])
-        self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxNumberOfPrevSpouses", str(
+        self.Wait(f"{self.baseID}FormView1_tbxNumberOfPrevSpouses", str(
             self.resInfo["spouse_former_count"]))
         for no, human in enumerate(json.loads(self.resInfo["spouse_former_info"])):
-            idName = f"ctl00_SiteContentPlaceHolder_FormView1_DListSpouse_ctl0{no}_"
+            idName = f"{self.baseID}FormView1_DListSpouse_ctl0{no}_"
             if no and self.old_page:
                 self.driver.find_element_by_id(f"{idName}InsertButtonSpouse").send_keys("")
             year, month, day = human["former_birth_date"].split("-")
@@ -1480,8 +1308,7 @@ class AllPage(AutoUs):
             
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '离异:')
             return 1
@@ -1496,22 +1323,18 @@ class AllPage(AutoUs):
         """ 工作教育 """
         print("工作教育")
         over = False
-        self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlPresentOccupation",
-                          self.resWork["professional_types"])
+        self.choiceSelect(f"{self.baseID}FormView1_ddlPresentOccupation", self.resWork["professional_types"])
         if self.resWork["professional_types"] == "N":
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxExplainOtherPresentOccupation",
-                      self.resWork["professional_info"])
+            self.Wait(f"{self.baseID}FormView1_tbxExplainOtherPresentOccupation", self.resWork["professional_info"])
             over = True
         if self.resWork["professional_types"] == "O":
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxExplainOtherPresentOccupation",
-                      self.resWork["professional_info"])
+            self.Wait(f"{self.baseID}FormView1_tbxExplainOtherPresentOccupation", self.resWork["professional_info"])
         if self.resWork["professional_types"] in ["H", "RT"]:
             over = True
         if over:
             self.urlButton()
             try:
-                errInfos = self.driver.find_element_by_id(
-                    "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+                errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
                 assert len(errInfos) > 1
                 self.errJson(errInfos, '工作教育:')
                 return 1
@@ -1522,74 +1345,57 @@ class AllPage(AutoUs):
 
         seList = []
 
-        year, month, day = self.resWork["induction_time"].split(
-            "-") if len(self.resWork["induction_time"]) > 3 else (0, 0, 0)
+        year, month, day = self.resWork["induction_time"].split("-") if len(self.resWork["induction_time"]) > 3 else (0, 0, 0)
 
         ids = [
             # 当前工作单位或学校的名称
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxEmpSchName",
-                self.resWork["company_name"].replace(",", "&").replace(".", "")),
+            (f"{self.baseID}FormView1_tbxEmpSchName", self.resWork["company_name"].replace(",", "&").replace(".", "")),
             # 街道地址（第一行）
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxEmpSchAddr1",
-                self.resWork["company_address"][:40]),
+            (f"{self.baseID}FormView1_tbxEmpSchAddr1", self.resWork["company_address"][:40]),
             # 街道地址（第二行）
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxEmpSchAddr2",
-                self.resWork["company_address"][40:]),
+            (f"{self.baseID}FormView1_tbxEmpSchAddr2", self.resWork["company_address"][40:]),
             # 城市
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxEmpSchCity",
-                self.resWork["company_city"]),
+            (f"{self.baseID}FormView1_tbxEmpSchCity", self.resWork["company_city"]),
             # 电话号码
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxWORK_EDUC_TEL",
-                self.resWork["company_phone"]),
+            (f"{self.baseID}FormView1_tbxWORK_EDUC_TEL", self.resWork["company_phone"]),
             # 所属日期
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlEmpDateFromDay", day),
+            (f"{self.baseID}FormView1_ddlEmpDateFromDay", day),
             # 入职年份
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxEmpDateFromYear", year),
+            (f"{self.baseID}FormView1_tbxEmpDateFromYear", year),
             # 所属月份
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlEmpDateFromMonth",
-             MONTH[month]),
+            (f"{self.baseID}FormView1_ddlEmpDateFromMonth", MONTH[month]),
             # 请简要描述您的工作职责：
-            ("ctl00_SiteContentPlaceHolder_FormView1_tbxDescribeDuties",
-                self.resWork["responsibility"]),
+            (f"{self.baseID}FormView1_tbxDescribeDuties", self.resWork["responsibility"]),
         ]
 
         # 州/省份
         if self.resWork["company_province"]:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxWORK_EDUC_ADDR_STATE",
-                        self.resWork["company_province"]))
+            ids.append((f"{self.baseID}FormView1_tbxWORK_EDUC_ADDR_STATE", self.resWork["company_province"]))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxWORK_EDUC_ADDR_STATE_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbxWORK_EDUC_ADDR_STATE_NA", ""))
 
         # 邮政区域/邮政编码
         if self.resWork["company_zip"]:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_tbxWORK_EDUC_ADDR_POSTAL_CD", self.resWork["company_zip"]))
+            ids.append((f"{self.baseID}FormView1_tbxWORK_EDUC_ADDR_POSTAL_CD", self.resWork["company_zip"]))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxWORK_EDUC_ADDR_POSTAL_CD_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbxWORK_EDUC_ADDR_POSTAL_CD_NA", ""))
 
         # 月收入
         if self.resWork["month_income"]:
-            ids.append(("ctl00_SiteContentPlaceHolder_FormView1_tbxCURR_MONTHLY_SALARY",
-                        self.resWork["month_income"]))
+            ids.append((f"{self.baseID}FormView1_tbxCURR_MONTHLY_SALARY", self.resWork["month_income"]))
         else:
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_cbxCURR_MONTHLY_SALARY_NA", ""))
+            ids.append((f"{self.baseID}FormView1_cbxCURR_MONTHLY_SALARY_NA", ""))
 
         seList += [
             # 所属国家
-            ("ctl00_SiteContentPlaceHolder_FormView1_ddlEmpSchCountry",
-                self.resWork["company_country"]),
-
+            (f"{self.baseID}FormView1_ddlEmpSchCountry", self.resWork["company_country"]),
         ]
 
         self.waitIdSel(ids, seList)
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '工作教育:')
             return 1
@@ -1608,16 +1414,13 @@ class AllPage(AutoUs):
 
         # 您之前有工作吗？
         if self.resWork["five_work_is"] == "N":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblPreviouslyEmployed_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblPreviouslyEmployed_1", ""))
         elif self.resWork["five_work_is"] == "Y":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblPreviouslyEmployed_0", ""))
+            ids.append((f"{self.baseID}FormView1_rblPreviouslyEmployed_0", ""))
             for no, work in enumerate(json.loads(self.resWork["five_work_info"])):
-                ferId = f"ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEmpl_ctl0{no}_"
+                ferId = f"{self.baseID}FormView1_dtlPrevEmpl_ctl0{no}_"
                 if no and self.old_page:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEmpl_ctl0{no-1}_InsertButtonPrevEmpl", ""))
+                    ids.append((f"{self.baseID}FormView1_dtlPrevEmpl_ctl0{no-1}_InsertButtonPrevEmpl", ""))
                 try:
                     sYear, sMonth, sDay = work["induction_time"].split("-")
                     eYear, eMonth, eDay = work["departure_time"].split("-")
@@ -1626,14 +1429,11 @@ class AllPage(AutoUs):
                     return 1
                 ids += [
                     # 公司名
-                    (f"{ferId}tbEmployerName", work["company_name"].strip(
-                        ".").replace(".", "").replace(",", "")),
+                    (f"{ferId}tbEmployerName", work["company_name"].replace(",", "&").replace(".", "")),
                     # 公司地址1
-                    (f"{ferId}tbEmployerStreetAddress1",
-                     work["company_address"][:40]),
+                    (f"{ferId}tbEmployerStreetAddress1", work["company_address"][:40]),
                     # 公司地址2
-                    (f"{ferId}tbEmployerStreetAddress2",
-                     work["company_address"][40:]),
+                    (f"{ferId}tbEmployerStreetAddress2", work["company_address"][40:]),
                     # 城市
                     (f"{ferId}tbEmployerCity", work["company_city"]),
                     # 电话
@@ -1659,26 +1459,22 @@ class AllPage(AutoUs):
                 ]
                 # 州省
                 if work["company_province"]:
-                    ids.append(
-                        (f"{ferId}tbxPREV_EMPL_ADDR_STATE", work["company_province"]))
+                    ids.append((f"{ferId}tbxPREV_EMPL_ADDR_STATE", work["company_province"]))
                 else:
                     ids.append((f"{ferId}cbxPREV_EMPL_ADDR_STATE_NA", ""))
                 # 邮编
                 if work["company_zip"]:
-                    ids.append(
-                        (f"{ferId}tbxPREV_EMPL_ADDR_POSTAL_CD", work["company_zip"]))
+                    ids.append((f"{ferId}tbxPREV_EMPL_ADDR_POSTAL_CD", work["company_zip"]))
                 else:
                     ids.append((f"{ferId}cbxPREV_EMPL_ADDR_POSTAL_CD_NA", ""))
                 # 主管姓
                 if work["director_name"]:
-                    ids.append(
-                        (f"{ferId}tbSupervisorSurname", work["director_name"]))
+                    ids.append((f"{ferId}tbSupervisorSurname", work["director_name"]))
                 else:
                     ids.append((f"{ferId}cbxSupervisorSurname_NA", ""))
                 # 主管名
                 if work["director_names"]:
-                    ids.append((f"{ferId}tbSupervisorGivenName",
-                                work["director_names"]))
+                    ids.append((f"{ferId}tbSupervisorGivenName", work["director_names"]))
                 else:
                     ids.append((f"{ferId}cbxSupervisorGivenName_NA", ""))
 
@@ -1687,22 +1483,19 @@ class AllPage(AutoUs):
 
         # 您是否在任何相当于中学水平或以上的教育机构里学习过？
         if self.resWork["education_background"] == "N":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblOtherEduc_1", ""))
+            ids.append((f"{self.baseID}FormView1_rblOtherEduc_1", ""))
         elif self.resWork["education_background"] == "Y":
-            ids.append(
-                ("ctl00_SiteContentPlaceHolder_FormView1_rblOtherEduc_0", ""))
+            ids.append((f"{self.baseID}FormView1_rblOtherEduc_0", ""))
 
             for no, school in enumerate(json.loads(self.resWork["education_school"])):
-                ferId = f"ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl0{no}_"
+                ferId = f"{self.baseID}FormView1_dtlPrevEduc_ctl0{no}_"
                 aYear, aMonth, aDay = school["admission_date"].split("-")
                 gYear, gMonth, gDay = school["graduation_date"].split("-")
                 if no and self.old_page:
-                    ids.append(
-                        (f"ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl0{no - 1}_InsertButtonPrevEduc", ""))
+                    ids.append((f"{self.baseID}FormView1_dtlPrevEduc_ctl0{no - 1}_InsertButtonPrevEduc", ""))
                 ids += [
                     # 学校名称
-                    (f"{ferId}tbxSchoolName", school["name"]),
+                    (f"{ferId}tbxSchoolName", school["name"].replace(",", "&").replace(".", "")),
                     # 地址
                     (f"{ferId}tbxSchoolAddr1", school["address"][:40]),
                     # 地址2
@@ -1725,20 +1518,17 @@ class AllPage(AutoUs):
                     (f"{ferId}ddlSchoolToMonth", MONTH[gMonth]),
                 ]
                 seList += [
-
                     # 国家
                     (f"{ferId}ddlSchoolCountry", school["country"])
                 ]
                 # 州省
                 if school["province"]:
-                    ids.append(
-                        (f"{ferId}tbxEDUC_INST_ADDR_STATE", school["province"]))
+                    ids.append((f"{ferId}tbxEDUC_INST_ADDR_STATE", school["province"]))
                 else:
                     ids.append((f"{ferId}cbxEDUC_INST_ADDR_STATE_NA", ""))
                 # 邮编
                 if school["zip"]:
-                    ids.append(
-                        (f"{ferId}tbxEDUC_INST_POSTAL_CD", school["zip"]))
+                    ids.append((f"{ferId}tbxEDUC_INST_POSTAL_CD", school["zip"]))
                 else:
                     ids.append((f"{ferId}cbxEDUC_INST_POSTAL_CD_NA", ""))
 
@@ -1746,8 +1536,7 @@ class AllPage(AutoUs):
         sleep(2)
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '以前的工作:')
             return 1
@@ -1765,118 +1554,96 @@ class AllPage(AutoUs):
 
         # 您是否属于一个宗族或者部落？
         if self.resWork["religious_beliefs_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblCLAN_TRIBE_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblCLAN_TRIBE_IND_1")
         elif self.resWork["religious_beliefs_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblCLAN_TRIBE_IND_0")
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxCLAN_TRIBE_NAME",
-                      self.resWork["religious_beliefs"])
+            self.Wait(f"{self.baseID}FormView1_rblCLAN_TRIBE_IND_0")
+            self.Wait(f"{self.baseID}FormView1_tbxCLAN_TRIBE_NAME", self.resWork["religious_beliefs"])
 
         # 请列出您所说语言的种类
         lang = self.resWork["master_language"].split(',')[0].strip()
-        self.Wait(
-            "ctl00_SiteContentPlaceHolder_FormView1_dtlLANGUAGES_ctl00_tbxLANGUAGE_NAME", lang)
+        self.Wait(f"{self.baseID}FormView1_dtlLANGUAGES_ctl00_tbxLANGUAGE_NAME", lang)
         for i, language in enumerate(self.resWork["master_language"].split(',')[1:]):
             language = language.strip()
-            self.Wait(f"ctl00_SiteContentPlaceHolder_FormView1_dtlLANGUAGES_ctl0{i}_InsertButtonLANGUAGE")
-            self.Wait(f"ctl00_SiteContentPlaceHolder_FormView1_dtlLANGUAGES_ctl0{i+1}_tbxLANGUAGE_NAME", language)
+            self.Wait(f"{self.baseID}FormView1_dtlLANGUAGES_ctl0{i}_InsertButtonLANGUAGE")
+            self.Wait(f"{self.baseID}FormView1_dtlLANGUAGES_ctl0{i+1}_tbxLANGUAGE_NAME", language)
         # 最近五年里您是否去过其他国家？
         if self.resWork["five_been_country_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblCOUNTRIES_VISITED_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblCOUNTRIES_VISITED_IND_1")
         elif self.resWork["five_been_country_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblCOUNTRIES_VISITED_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblCOUNTRIES_VISITED_IND_0")
             five_been_country = json.loads(self.resWork["five_been_country"])
             for index, val in enumerate(five_been_country):
                 if index and self.old_page:
-                    self.Wait(f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index-1}_InsertButtonCountriesVisited")
-                self.choiceSelect(f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index}_ddlCOUNTRIES_VISITED", val["name"])
+                    self.Wait(f"{self.baseID}FormView1_dtlCountriesVisited_ctl0{index-1}_InsertButtonCountriesVisited")
+                self.choiceSelect(f"{self.baseID}FormView1_dtlCountriesVisited_ctl0{index}_ddlCOUNTRIES_VISITED", val["name"])
 
             for index, value in enumerate(json.loads(self.resWork["five_been_country"])):
                 if index and self.old_page:
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index - 1}_InsertButtonCountriesVisited")
-                self.choiceSelect(
-                    f"ctl00_SiteContentPlaceHolder_FormView1_dtlCountriesVisited_ctl0{index}_ddlCOUNTRIES_VISITED", value["name"])
+                    self.Wait(f"{self.baseID}FormView1_dtlCountriesVisited_ctl0{index - 1}_InsertButtonCountriesVisited")
+                self.choiceSelect(f"{self.baseID}FormView1_dtlCountriesVisited_ctl0{index}_ddlCOUNTRIES_VISITED", value["name"])
 
         # 您是否从属于任何一个专业的、社会或慈善组织？并为其做过贡献、或为其工作过？
         if self.resWork["charity_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblORGANIZATION_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblORGANIZATION_IND_1")
         elif self.resWork["charity_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblORGANIZATION_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblORGANIZATION_IND_0")
             for index, value in enumerate(json.loads(self.resWork["charity_name"])):
                 if index and self.old_page:
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dtlORGANIZATIONS_ctl0{index - 1}_InsertButtonORGANIZATION")
-                self.Wait(
-                    f"ctl00_SiteContentPlaceHolder_FormView1_dtlORGANIZATIONS_ctl0{index}_tbxORGANIZATION_NAME", value["name"])
+                    self.Wait(f"{self.baseID}FormView1_dtlORGANIZATIONS_ctl0{index - 1}_InsertButtonORGANIZATION")
+                self.Wait(f"{self.baseID}FormView1_dtlORGANIZATIONS_ctl0{index}_tbxORGANIZATION_NAME", value["name"])
 
         # 您是否具有特殊技能或接受过特殊培训，例如有关枪械、炸药、 核装置、 生物或化学方面的经验？
         if self.resWork["special_training_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblSPECIALIZED_SKILLS_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblSPECIALIZED_SKILLS_IND_1")
         elif self.resWork["special_training_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblSPECIALIZED_SKILLS_IND_0")
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxSPECIALIZED_SKILLS_EXPL",
-                      self.resWork["special_training_info"])
+            self.Wait(f"{self.baseID}FormView1_rblSPECIALIZED_SKILLS_IND_0")
+            self.Wait(f"{self.baseID}FormView1_tbxSPECIALIZED_SKILLS_EXPL", self.resWork["special_training_info"])
 
         # 您是否曾经在军队服役？
         if self.resWork["army_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblMILITARY_SERVICE_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblMILITARY_SERVICE_IND_1")
         elif self.resWork["army_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblMILITARY_SERVICE_IND_0")
+            self.Wait(f"{self.baseID}FormView1_rblMILITARY_SERVICE_IND_0")
             for index, value in enumerate(json.loads(self.resWork["army_info"])):
                 sYear, sMonth, sDay = value["start_time"].split("-")
                 eYear, eMonth, eDay = value["end_time"].split("-")
                 if index and self.old_page:
-                    self.Wait(
-                        f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index - 1}_InsertButtonMILITARY_SERVICE", "")
+                    self.Wait(f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index - 1}_InsertButtonMILITARY_SERVICE", "")
                 ids += [
                     # 军种
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_BRANCH", value["services"]),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_BRANCH", value["services"]),
                     # 级别/职位
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_RANK", value["level"]),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_RANK", value["level"]),
                     # 军事特长
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_SPECIALTY", value["military"]),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_SPECIALTY", value["military"]),
                     # 服役开始日
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMDay", sDay),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMDay", sDay),
                     # 服役开始年份
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_FROMYear", sYear),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_FROMYear", sYear),
                     # 服役开始月份
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMMonth", MONTH[sMonth]),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMMonth", MONTH[sMonth]),
                     # 服役结束日
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TODay", eDay),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TODay", eDay),
                     # 服役结束年份
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_TOYear", eYear),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_TOYear", eYear),
                     # 服役结束月份
-                    (f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TOMonth", MONTH[eMonth]),
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TOMonth", MONTH[eMonth]),
                 ]
                 ids = self.waitIdSel(ids)
                 # 服役国家
-                self.choiceSelect(
-                    f"ctl00_SiteContentPlaceHolder_FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_CNTRY",  value["country"])
+                self.choiceSelect(f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_CNTRY",  value["country"])
 
         # 你是否曾经服务于或参与过准军事性单位、治安团体、造反组织、游击队或暴动组织，或曾经是其成员之一？
         if self.resWork["military_unit_is"] == "N":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblINSURGENT_ORG_IND_1")
+            self.Wait(f"{self.baseID}FormView1_rblINSURGENT_ORG_IND_1")
         elif self.resWork["military_unit_is"] == "Y":
-            self.Wait(
-                "ctl00_SiteContentPlaceHolder_FormView1_rblINSURGENT_ORG_IND_0")
-            self.Wait("ctl00_SiteContentPlaceHolder_FormView1_tbxINSURGENT_ORG_EXPL",
+            self.Wait(f"{self.baseID}FormView1_rblINSURGENT_ORG_IND_0")
+            self.Wait(f"{self.baseID}FormView1_tbxINSURGENT_ORG_EXPL",
                       self.resWork["military_unit_info"])
 
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(
-                "ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '补充页:')
             return 1
@@ -1890,50 +1657,103 @@ class AllPage(AutoUs):
     def securityAndBackground(self):
         """ 安全与背景页 """
         print("安全与背景页")
+
+        # 1
         ids1 = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblDisease_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblDisorder_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblDruguser_1", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", ""),
+            (f"{self.baseID}FormView1_rblDisease_1", ""),
+            # (f"{self.baseID}FormView1_rblDisease_0", ""),            
+            # (f"{self.baseID}FormView1_tbxDisease", "")            
+            (f"{self.baseID}FormView1_rblDisorder_1", ""),
+            # (f"{self.baseID}FormView1_rblDisorder_0", ""),            
+            # (f"{self.baseID}FormView1_tbxDisorder", "")            
+            (f"{self.baseID}FormView1_rblDruguser_1", ""),
+            # (f"{self.baseID}FormView1_rblDruguser_0", ""),            
+            # (f"{self.baseID}FormView1_tbxDruguser", "")            
+            (f"{self.baseID}UpdateButton3", ""),
         ]
 
         ids2 = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblArrested_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblControlledSubstances_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblProstitution_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblMoneyLaundering_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblHumanTrafficking_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblAssistedSevereTrafficking_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblHumanTraffickingRelated_1", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", ""),
+            (f"{self.baseID}FormView1_rblArrested_1", ""),
+            # (f"{self.baseID}FormView1_rblArrested_0", ""),            
+            # (f"{self.baseID}FormView1_tbxArrested", "")            
+            (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
+            # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),            
+            # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
+            (f"{self.baseID}FormView1_rblProstitution_1", ""),
+            # (f"{self.baseID}FormView1_rblProstitution_0", ""),            
+            # (f"{self.baseID}FormView1_tbxProstitution", "")            
+            (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
+            # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),            
+            # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
+            (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
+            # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),            
+            # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
+            (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
+            # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),            
+            # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
+            (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
+            # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),            
+            # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
+            (f"{self.baseID}UpdateButton3", ""),
         ]
 
         ids3 = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblIllegalActivity_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblTerroristActivity_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblTerroristSupport_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblTerroristOrg_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblGenocide_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblTorture_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblExViolence_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblChildSoldier_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblReligiousFreedom_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblPopulationControls_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblTransplant_1", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", ""),
+            (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
+            # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),            
+            # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
+            (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
+            # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),            
+            # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
+            (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
+            # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),            
+            # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
+            (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
+            # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),            
+            # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
+            (f"{self.baseID}FormView1_rblGenocide_1", ""),
+            # (f"{self.baseID}FormView1_rblGenocide_0", ""),            
+            # (f"{self.baseID}FormView1_tbxGenocide", "")            
+            (f"{self.baseID}FormView1_rblTorture_1", ""),
+            # (f"{self.baseID}FormView1_rblTorture_0", ""),            
+            # (f"{self.baseID}FormView1_tbxTorture", "")            
+            (f"{self.baseID}FormView1_rblExViolence_1", ""),
+            # (f"{self.baseID}FormView1_rblExViolence_0", ""),            
+            # (f"{self.baseID}FormView1_tbxExViolence", "")            
+            (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
+            # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),            
+            # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
+            (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
+            # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),            
+            # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
+            (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
+            # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),            
+            # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
+            (f"{self.baseID}FormView1_rblTransplant_1", ""),
+            # (f"{self.baseID}FormView1_rblTransplant_0", ""),            
+            # (f"{self.baseID}FormView1_tbxTransplant", "")            
+            (f"{self.baseID}UpdateButton3", ""),
         ]
 
         ids4 = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblImmigrationFraud_1", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", ""),
+            (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
+            # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),            
+            # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
+            (f"{self.baseID}UpdateButton3", ""),
         ]
 
         ids5 = [
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblChildCustody_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblVotingViolation_1", ""),
-            ("ctl00_SiteContentPlaceHolder_FormView1_rblRenounceExp_1", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", ""),
+            (f"{self.baseID}FormView1_rblChildCustody_1", ""),
+            # (f"{self.baseID}FormView1_rblChildCustody_0", ""),            
+            # (f"{self.baseID}FormView1_tbxChildCustody", "")            
+            (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
+            # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),            
+            # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
+            (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
+            # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),            
+            # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
+            (f"{self.baseID}UpdateButton3", ""),
         ]
+        
 
         idsDic = {
             "SecurityandBackground1": ids1,
@@ -1959,20 +1779,18 @@ class AllPage(AutoUs):
             f.write(requests.get(self.resInfo["photo"]).content)
 
         ids = [
-            ("ctl00_SiteContentPlaceHolder_btnUploadPhoto", ""),
+            (f"{self.baseID}btnUploadPhoto", ""),
             ("ctl00_cphMain_imageFileUpload", BASEDIR + "\\photo.jpeg"),
             ("ctl00_cphButtons_btnUpload", ""),
         ]
         ids = self.waitIdSel(ids)
         if "ctl00_cphError_errorUpload" in self.driver.page_source:
-            info1 = self.driver.find_element(
-                "id", "ctl00_cphError_errorUpload").text
+            info1 = self.driver.find_element("id", "ctl00_cphError_errorUpload").text
             if info1 == "Unable to read image memory into DibImage.":
                 self.errJson(['', info1], '照片上传失败:')
                 return 1
 
-        info2 = self.driver.find_element(
-            "id", "ctl00_cphMain_qualityCheckOutcome").text
+        info2 = self.driver.find_element("id", "ctl00_cphMain_qualityCheckOutcome").text
 
         if info2 == "Photo passed quality standards":
             print("照片上传成功")
@@ -1982,7 +1800,7 @@ class AllPage(AutoUs):
 
         ids = [
             ("ctl00_cphButtons_btnContinue", ""),
-            ("ctl00_SiteContentPlaceHolder_UpdateButton3", "")
+            (f"{self.baseID}UpdateButton3", "")
         ]
         self.urlButton(0)
         self.waitIdSel(ids)
@@ -1995,7 +1813,7 @@ class AllPage(AutoUs):
         """ 审查页面 """
         print("审查页面")
         self.urlButton(0)
-        self.Wait("ctl00_SiteContentPlaceHolder_UpdateButton3")
+        self.Wait(f"{self.baseID}UpdateButton3")
         return 0
 
     def signCertify(self):
@@ -2003,16 +1821,15 @@ class AllPage(AutoUs):
         self.progress("90% 审查页面 完成")
         print("最后确认页面")
         self.driver.execute_script("document.documentElement.scrollTop=910")
-        self.Wait("ctl00_SiteContentPlaceHolder_FormView3_rblPREP_IND_1")
-        self.Wait("ctl00_SiteContentPlaceHolder_PPTNumTbx",
+        self.Wait(f"{self.baseID}FormView3_rblPREP_IND_1")
+        self.Wait(f"{self.baseID}PPTNumTbx",
                   self.resInfo["passport_number"])
         while "You have successfully" not in self.driver.page_source and "sign your application:" in self.driver.page_source:
             try:
                 self.driver.execute_script("document.documentElement.scrollTop=910")
-                result = self.getCaptcha(
-                    "c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
-                self.Wait("ctl00_SiteContentPlaceHolder_CodeTextBox", result)
-                self.Wait("ctl00_SiteContentPlaceHolder_btnSignApp")
+                result = self.getCaptcha("c_general_esign_signtheapplicationf_{self.baseID}defaultcaptcha_CaptchaImage")
+                self.Wait(f"{self.baseID}CodeTextBox", result)
+                self.Wait(f"{self.baseID}btnSignApp")
                 if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
             except: pass
             sleep(2)
@@ -2025,8 +1842,8 @@ class AllPage(AutoUs):
         print("完成页面")
         self.printPdf()
         sleep(1)
-        self.Wait("ctl00_SiteContentPlaceHolder_FormView1_btnPrintApp")
-        self.Wait("ctl00_SiteContentPlaceHolder_ucModalNavigate_ctl01_btnWarning")
+        self.Wait(f"{self.baseID}FormView1_btnPrintApp")
+        self.Wait(f"{self.baseID}ucModalNavigate_ctl01_btnWarning")
         sleep(1)
         self.printPdf()
         sleep(1)

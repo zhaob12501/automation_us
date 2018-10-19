@@ -30,7 +30,7 @@ class UsPipeline():
         # 上线使用条件
         sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
         # 测试使用条件
-        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 3"
+        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 56"
         self.cur.execute(sql)
         resPublic = self.cur.fetchone()
         if not resPublic:
@@ -69,8 +69,8 @@ class UsPipeline():
         except:
             raise UsError('未传 aid 或者 aaCode/status 无值')
 
-        apeSql = ', '.join([f"ape.{key}=`{val}`" for key, val in kwargs.items()])
-        apSql = ', '.join([f"ap.{key}=`{val}`" for key, val in kwargs.items()])
+        apeSql = ', '.join([f'ape.{key}="{val}"' for key, val in kwargs.items()])
+        apSql = ', '.join([f'ap.{key}="{val}"' for key, val in kwargs.items()])
 
         sql = f'''UPDATE dc_business_america_public_eng AS ape, dc_business_america_public AS ap SET {apeSql}, {apSql} WHERE  ape.aid = {aid} AND  ap.aid = {aid}''' 
         print(repr(sql))
@@ -122,7 +122,7 @@ class UsPipeline():
         if not (ids and kwargs):
             raise UsError("数据库修改值不能为空")
         cSql = ', '.join([f"{key}='{val}'" for key, val in kwargs.items()])
-        sql = f"UPDATE dc_business_america_order SET {cSql} WHERE id = `{ids}``"
+        sql = f'UPDATE dc_business_america_order SET {cSql} WHERE id = "{ids}"'
         try:
             self.cur.execute(sql) 
             self.con.commit()
@@ -133,7 +133,7 @@ class UsPipeline():
         
     def uploadDays(self, date, country):
         """ 更新可预约时间表 """
-        sql = f"UPDATE dc_america_interview_days SET interview_days=`{date}`, utime=`{int(time())}` WHERE activity=`{country}`"
+        sql = f'UPDATE dc_america_interview_days SET interview_days="{date}", utime="{int(time())}" WHERE activity="{country}"'
         try:
             self.cur.execute(sql)
             self.con.commit()
