@@ -23,6 +23,8 @@ class RunAppointment:
             print('数据库连接完毕...')
             data = self.usPipe.selDBOrder()
             if not data:
+                if hasattr(self, "usPay"):
+                    del self.usPay
                 print('没有数据, 等待中...')
                 sleep(5)
                 continue
@@ -36,18 +38,22 @@ class RunAppointment:
 
             # 获取需要申请的人员信息
             self.usPay = AutoPay(data=self.usPipe.order_data, usPipe=self.usPipe)
-            if self.id != self.usPay.res["id"]:
-                self.id = self.usPay.res["id"]
-                self.usPay.login()
-            self.usPay.getDate()
-            if self.usPay.res["interview_status"] == 4:
-                self.usPay.appointment()
+            email_info = self.usPipe.get_group_email(self.usPipe.order_data[0]["mpid"])
+            if email_info["status"] != 1:
+                if self.id != self.usPay.res["id"]:
+                    self.id = self.usPay.res["id"]
+                    self.usPay.login()
+                self.usPay.getDate()
+                if self.usPay.res["interview_status"] == 4:
+                    self.usPay.appointment()
+            else:
+                self.usPay.group_pay_over()
 
 
 def main():
-    r = RunAppointment()
     while True:
         try:
+            r = RunAppointment()
             r.run()
         except Exception as e:
             print("====")

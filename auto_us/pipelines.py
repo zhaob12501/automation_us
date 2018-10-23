@@ -144,7 +144,7 @@ class UsPipeline():
             raise UsError(f"{e}\n{country}")
 
     def get_group_email(self, mpid):
-        sql = f"SELECT email, password FROM dc_business_america_email WHERE mpid={mpid} AND status=1"
+        sql = f"SELECT * FROM dc_business_america_email WHERE mpid={mpid}"
         self.cur.execute(sql)
         return self.cur.fetchone()
 

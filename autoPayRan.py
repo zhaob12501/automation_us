@@ -26,6 +26,8 @@ class RunPayInfo:
             print('数据库连接完毕...')
             data = self.usPipe.selAppointment()
             if not data:
+                if hasattr(self, "usPay"):
+                    del self.usPay
                 print('没有数据, 等待中...')
                 sleep(5)
                 continue
@@ -39,7 +41,8 @@ class RunPayInfo:
 
             # 获取需要申请的人员信息
             self.usPay = AutoPay(data=self.usPipe.order_data, usPipe=self.usPipe)
-            if not 1:
+            email_info = self.usPipe.get_group_email(self.usPipe.order_data[0]["mpid"])
+            if email_info["status"] != 1:
                 if not self.usPay.res["register_is"]:
                     self.register()
                 self.usPay.payInfo()

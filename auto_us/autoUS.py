@@ -1970,7 +1970,9 @@ class AllPage(AutoUs):
         self.waitIdSel(ids)
 
         self.progress("80% 上传照片页 完成")
-
+        if self.resPublic["inspect"]:
+            self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
+            return 1
         return 0
 
     def review(self):
