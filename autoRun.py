@@ -10,7 +10,6 @@ from time import time
 from auto_us import AllPage, UsPipeline
 from auto_us.settings import (POOL, UsError, glob, json, os, sleep, strftime,
                               sys)
-
 st = 0
 
 
@@ -20,7 +19,7 @@ class UsRun:
 
     def __init__(self):
         self.pool = POOL()
-        self.au = AllPage(usPipe=UsPipeline(self.pool))
+        # self.au = AllPage(noWin=True, usPipe=UsPipeline(self.pool))
         self.control = {
             0: self.con0,
             1: self.con1,
@@ -64,7 +63,11 @@ class UsRun:
         self.sendInfo()
 
     def con1(self):
-        # self.fillInfo()
+        # self.au = AllPage(data=self.auto.data, noWin=True, usPipe=UsPipeline(self.pool))
+        if hasattr(self.au, "driver"):
+            self.au.driver.quit()
+        self.au.getDriver(False)
+        self.fillInfo()
         self.done()
 
     def con2(self):
@@ -99,30 +102,31 @@ class UsRun:
                 # 数据处理
                 # =======
                 print('\n有数据进行提交\n')
-                # self.au = AllPage(data=self.auto.data, usPipe=UsPipeline(self.pool))
-                self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
+                self.au = AllPage(data=self.auto.data,
+                                  noWin=True, usPipe=UsPipeline(self.pool))
+                # self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
                 try:
                     self.control[self.au.resPublic["visa_status"]]()
                 except Exception as e:
                     print(e)
                     if hasattr(self.au, 'driver'):
                         self.au.driver.quit()
-                        self.au.getDriver
+                        self.au.getDriver()
 
                 if self.auto:
                     del self.auto
-            elif not data:
-                print('没有数据, 准备刷新...')
-                try:
-                    self.au.driver.get(self.au.usUrl)
-                except:
-                    if hasattr(self.au, 'driver'):
-                        self.au.driver.quit()
-                #     self.au.getDriver
-                print(strftime('%m/%d %H:%M:%S'))
-                sleep(5)
-                continue
 
+            if hasattr(self, "au"):
+                del self.au
+            print('没有数据, 等待中...')
+            # try:
+            #     self.au.driver.get(self.au.usUrl)
+            # except:
+            #     if hasattr(self.au, 'driver'):
+            #         self.au.driver.quit()
+            #     self.au.getDriver
+            print(strftime('%m/%d %H:%M:%S'))
+            sleep(5)
 
     def __del__(self):
         if hasattr(self, "pool"):
@@ -131,10 +135,10 @@ class UsRun:
 
 
 def main():
-    r = UsRun()
     while True:
         # r.run
         try:
+            r = UsRun()
             r.run
         except UsError as ue:
             print("in ue error")
@@ -149,10 +153,3 @@ def main():
 if __name__ == '__main__':
     print(strftime("%Y-%m-%d %H-%M-%S"))
     main()
-    # import requests
-    # with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
-    #     files = {'file': ("AppointmentConfirmation.pdf", f.read(), "application/pdf")}
-
-    # url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
-    # res = requests.post(url, files=files).json()
-    # print(res)

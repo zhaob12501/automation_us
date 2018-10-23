@@ -73,8 +73,12 @@ class Base:
         # 设置显性等待时间, timeout = 10, 间隔 0.3s 检查一次
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
 
-    @property
-    def getDriver(self):
+    def getDriver(self, noWin=True):
+        # 无界面
+        if noWin:
+            self.chrome_options.add_argument('--headless')
+        else:
+            self.chrome_options._arguments.remove('--headless')
         self.driver = webdriver.Chrome(
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
@@ -234,7 +238,7 @@ class AutoUs(Base):
         #　识别验证码
         while self.driver.current_url == self.usUrl:
             try:
-                result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                result = self.getCaptcha('c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
                 sleep(1)
                 self.Wait(f'{self.baseID}lnkNew')
@@ -437,7 +441,7 @@ class AutoUs(Base):
 
     def printPdf(self):
         self.driver.execute_script("window.print()")
-        sleep(3)
+        sleep(2)
 
     def renamePdf(self, path=os.path.join(BASEDIR, 'usFile')):
         for infile in os.listdir(path):
@@ -481,7 +485,6 @@ class AutoUs(Base):
 
 class AllPage(AutoUs):
     """ 逻辑 """
-
     # 入口函数 -- 程序执行开始
     @property
     def run(self):
@@ -920,7 +923,36 @@ class AllPage(AutoUs):
                 ids = self.waitIdSel(ids)
                 self.choiceSelect(f"{self.baseID}FormView1_ddlPayerCountry", self.resPublic['pay_personal_country'])
 
-        ids = self.waitIdSel(ids)
+        # 其它公司机构
+        if self.resPublic['travel_cost_pay'] == 'C':
+            ids += [
+                # 承担您旅行费用的公司或组织名称
+                (f"{self.baseID}FormView1_tbxPayingCompany", self.resPublic["pay_group_name"]),
+                # 电话号码
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic["pay_group_phone"]),
+                # 与您的关系
+                (f"{self.baseID}FormView1_tbxCompanyRelation", self.resPublic["pay_group_relation"]),
+                # 街道地址（第一行）
+                (f"{self.baseID}FormView1_tbxPayerStreetAddress1", self.resPublic["pay_group_address"][:40]),
+                # 街道地址（第二行）
+                (f"{self.baseID}FormView1_tbxPayerStreetAddress2", self.resPublic["pay_group_address"][40:]),
+                # 城市
+                (f"{self.baseID}FormView1_tbxPayerCity", self.resPublic["pay_group_city"]),
+            ]
+            # 州/省份
+            if "N":
+                ids.append((f"{self.baseID}FormView1_cbxDNAPayerStateProvince", ""))
+            elif "Y":
+                ids.append((f"{self.baseID}FormView1_tbxPayerStateProvince", self.resPublic["pay_group_province"]))
+
+            # 邮政区域/邮政编码
+            if "N":
+                ids.append((f"{self.baseID}FormView1_cbxDNAPayerPostalZIPCode", ""))
+            elif "Y":
+                ids.append((f"{self.baseID}FormView1_tbxPayerPostalZIPCode", self.resPublic["pay_group_zip"]))
+            # 国家/地区
+            seList += [(f"{self.baseID}FormView1_ddlPayerCountry", self.resPublic["pay_group_country"])]
+        ids = self.waitIdSel(ids, seList)
 
         # 州
         self.choiceSelect(f"{self.baseID}FormView1_ddlTravelState", self.resPublic['stay_province'])
@@ -976,16 +1008,87 @@ class AllPage(AutoUs):
         """ 以前美国之行 """
         print("以前美国之行")
         # 您是否曾经在美国停留过？
-        if self.resPublic["old_stay_is"] == 'Y':
-            self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_0")
-        elif self.resPublic["old_stay_is"] == 'N':
+        if self.resPublic["old_stay_is"] == 'N':
             self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_1")
+        elif self.resPublic["old_stay_is"] == 'Y':
+            self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_0")
+            """ 
+            {"arrived":[{"arrived_time":"2004-10-12","time":"12","times":"\u5929"},{"arrived_time":"2004-10-13","time":"12","times":"\u5929"}]}
+             """
+            stay_info = json.loads(self.resPublic["old_stay_info"]).get("arrived")
+            # 抵达日期
+            for index, value in enumerate(stay_info):
+                year, month, day = value["arrived_time"].split("-")
+                if index and self.old_page:
+                    self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index-1}_InsertButtonPREV_US_VISIT")
+                self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_DTEDay", day)
+                self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_DTEMonth", MONTH[month])
+                self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_tbxPREV_US_VISIT_DTEYear", year)
+                self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_tbxPREV_US_VISIT_LOS", value["time"])
+                self.choiceSelect(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_LOS_CD", value["times"])
+
+            # 您是否持有或者曾经持有美国驾照
+            driver = json.loads(self.resPublic["old_stay_info"]).get("驾照")
+            if not driver:
+                self.Wait(f"{self.baseID}FormView1_rblPREV_US_DRIVER_LIC_IND_1")
+            elif driver:
+                self.Wait(f"{self.baseID}FormView1_rblPREV_US_DRIVER_LIC_IND_0")
+                for index, value in enumerate(driver):
+                    if index and self.old_page:
+                        self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index-1}_InsertButtonUS_DRIVER_LICENSE")
+                    if "驾照号":
+                        self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_tbxUS_DRIVER_LICENSE", value["驾照号"]) # 驾照号
+                    else:
+                        self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_cbxUS_DRIVER_LICENSE_NA")
+                    self.choiceSelect(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_ddlUS_DRIVER_LICENSE_STATE", value["驾照所属州"]) # 驾照所属州
 
         # 您是否曾经获得过美国签证?
-        if self.resPublic["old_visa_is"] == 'Y':
-            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_0")
-        elif self.resPublic["old_visa_is"] == 'N':
+        if self.resPublic["old_visa_is"] == 'N':
             self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_1")
+        elif self.resPublic["old_visa_is"] == 'Y':
+            self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_0")
+            year, month, day = self.resPublic["old_visa_time"].split("-")
+            self.Wait(f"{self.baseID}FormView1_ddlPREV_VISA_ISSUED_DTEDay", day)
+            self.Wait(f"{self.baseID}FormView1_ddlPREV_VISA_ISSUED_DTEMonth", MONTH[month])
+            self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_ISSUED_DTEYear", year)
+            # 签证号码
+            if self.resPublic["old_visa_number"]:
+                self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_FOIL_NUMBER", self.resPublic["old_visa_number"])
+            else:
+                self.Wait(f"{self.baseID}FormView1_cbxPREV_VISA_FOIL_NUMBER_NA")
+
+            # 您此次是否申请同类签证？
+            if self.resPublic["old_visa_type_is"] == "N":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_SAME_TYPE_IND_1")
+            elif self.resPublic["old_visa_type_is"] == "Y":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_SAME_TYPE_IND_0")
+
+            # 您现在申请签证的所在国家或地点同于您上个签证颁发所在国或地点吗? 此国家或地点是您主要居住地吗?
+            if self.resPublic["old_visa_country_is"] == "N":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_SAME_CNTRY_IND_1")
+            elif self.resPublic["old_visa_country_is"] == "Y":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_SAME_CNTRY_IND_0")
+
+            # 您是否留取过十指指纹？
+            if self.resPublic["old_visa_fingerprint_is"] == "N":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_TEN_PRINT_IND_1")
+            elif self.resPublic["old_visa_fingerprint_is"] == "Y":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_TEN_PRINT_IND_0")
+
+            # 您的美国签证是否曾经遗失或者被盗？
+            if self.resPublic["old_visa_lost_is"] == "N":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_LOST_IND_1")
+            elif self.resPublic["old_visa_lost_is"] == "Y":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_LOST_IND_0")
+                self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_LOST_YEAR", self.resPublic["old_visa_lost_time"])
+                self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_LOST_EXPL", self.resPublic["old_visa_lost_info"])
+
+            # 您的美国签证是否曾经被注销或撤销过？
+            if self.resPublic["old_visa_undo_is"] == "N":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_CANCELLED_IND_1")
+            elif self.resPublic["old_visa_undo_is"] == "Y":
+                self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_CANCELLED_IND_0")
+                self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_CANCELLED_EXPL", self.resPublic["old_visa_undo_info"])
 
         # 您被拒签过吗？ 或在入境口岸被拒入境，或被撤销入境申请？
         if self.resPublic["old_visa_refused_is"] == 'Y':
@@ -1659,107 +1762,160 @@ class AllPage(AutoUs):
 
         return 0
 
+    def get_sec(self, status, ids):
+        sec = json.loads(self.resWork["security"])
+        if sec[status] == "N":
+            return [(f"{self.baseID}FormView1_rbl{ids}_1", "")]
+        elif sec[status] == "Y":
+            return [
+                (f"{self.baseID}FormView1_rbl{ids}_0", ""),
+                (f"{self.baseID}FormView1_tbx{ids}", sec[f"info{status.strip('status')}"])
+            ]
+
     def securityAndBackground(self):
         """ 安全与背景页 """
         print("安全与背景页")
 
-        # 1
-        ids1 = [
-            (f"{self.baseID}FormView1_rblDisease_1", ""),
-            # (f"{self.baseID}FormView1_rblDisease_0", ""),            
-            # (f"{self.baseID}FormView1_tbxDisease", "")            
-            (f"{self.baseID}FormView1_rblDisorder_1", ""),
-            # (f"{self.baseID}FormView1_rblDisorder_0", ""),            
-            # (f"{self.baseID}FormView1_tbxDisorder", "")            
-            (f"{self.baseID}FormView1_rblDruguser_1", ""),
-            # (f"{self.baseID}FormView1_rblDruguser_0", ""),            
-            # (f"{self.baseID}FormView1_tbxDruguser", "")            
-            (f"{self.baseID}UpdateButton3", ""),
-        ]
+        btn = [(f"{self.baseID}UpdateButton3", "")]
 
-        ids2 = [
-            (f"{self.baseID}FormView1_rblArrested_1", ""),
-            # (f"{self.baseID}FormView1_rblArrested_0", ""),            
-            # (f"{self.baseID}FormView1_tbxArrested", "")            
-            (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
-            # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),            
-            # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
-            (f"{self.baseID}FormView1_rblProstitution_1", ""),
-            # (f"{self.baseID}FormView1_rblProstitution_0", ""),            
-            # (f"{self.baseID}FormView1_tbxProstitution", "")            
-            (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
-            # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),            
-            # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
-            (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
-            # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),            
-            # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
-            (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
-            # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),            
-            # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
-            (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
-            # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),            
-            # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
-            (f"{self.baseID}UpdateButton3", ""),
-        ]
+        sec1 = self.get_sec(f"status1", "Disease")
+        sec2 = self.get_sec(f"status2", "Disorder")
+        sec3 = self.get_sec(f"status3", "Druguser")
 
-        ids3 = [
-            (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
-            # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),            
-            # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
-            (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
-            # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),            
-            # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
-            (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
-            # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),            
-            # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
-            (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
-            # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),            
-            # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
-            (f"{self.baseID}FormView1_rblGenocide_1", ""),
-            # (f"{self.baseID}FormView1_rblGenocide_0", ""),            
-            # (f"{self.baseID}FormView1_tbxGenocide", "")            
-            (f"{self.baseID}FormView1_rblTorture_1", ""),
-            # (f"{self.baseID}FormView1_rblTorture_0", ""),            
-            # (f"{self.baseID}FormView1_tbxTorture", "")            
-            (f"{self.baseID}FormView1_rblExViolence_1", ""),
-            # (f"{self.baseID}FormView1_rblExViolence_0", ""),            
-            # (f"{self.baseID}FormView1_tbxExViolence", "")            
-            (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
-            # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),            
-            # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
-            (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
-            # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),            
-            # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
-            (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
-            # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),            
-            # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
-            (f"{self.baseID}FormView1_rblTransplant_1", ""),
-            # (f"{self.baseID}FormView1_rblTransplant_0", ""),            
-            # (f"{self.baseID}FormView1_tbxTransplant", "")            
-            (f"{self.baseID}UpdateButton3", ""),
-        ]
-
-        ids4 = [
-            (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
-            # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),            
-            # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
-            (f"{self.baseID}UpdateButton3", ""),
-        ]
-
-        ids5 = [
-            (f"{self.baseID}FormView1_rblChildCustody_1", ""),
-            # (f"{self.baseID}FormView1_rblChildCustody_0", ""),            
-            # (f"{self.baseID}FormView1_tbxChildCustody", "")            
-            (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
-            # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),            
-            # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
-            (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
-            # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),            
-            # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
-            (f"{self.baseID}UpdateButton3", ""),
-        ]
+        ids1 = sec1 + sec2 + sec3
         
+        sec4 = self.get_sec(f"status4", "Arrested")
+        sec5 = self.get_sec(f"status5", "ControlledSubstances")
+        sec6 = self.get_sec(f"status6", "Prostitution")
+        sec7 = self.get_sec(f"status7", "MoneyLaundering")
+        sec8 = self.get_sec(f"status8", "HumanTrafficking")
+        sec9 = self.get_sec(f"status9", "AssistedSevereTrafficking")
+        sec10 = self.get_sec(f"status10", "HumanTraffickingRelated")
 
+        ids2 = sec4 + sec5 + sec6 + sec7 + sec8 + sec9 + sec10
+
+        sec11 = self.get_sec(f"status11", "IllegalActivity")
+        sec12 = self.get_sec(f"status12", "TerroristActivity")
+        sec13 = self.get_sec(f"status13", "TerroristSupport")
+        sec14 = self.get_sec(f"status14", "TerroristOrg")
+        sec15 = self.get_sec(f"status15", "Genocide")
+        sec16 = self.get_sec(f"status16", "Torture")
+        sec17 = self.get_sec(f"status17", "ExViolence")
+        sec18 = self.get_sec(f"status18", "ChildSoldier")
+        sec19 = self.get_sec(f"status19", "ReligiousFreedom")
+        sec20 = self.get_sec(f"status20", "PopulationControls")
+        sec21 = self.get_sec(f"status21", "Transplant")
+
+        ids3 = sec11 + sec12 + sec13 + sec14 + sec15 + sec16 + sec17 + sec18 + sec19 + sec20 + sec21
+        
+        sec22 = self.get_sec(f"status22", "ImmigrationFraud")
+        sec26 = self.get_sec(f"status26", "RemovalHearing")
+        sec27 = self.get_sec(f"status27", "FailToAttend")
+        sec28 = self.get_sec(f"status28", "VisaViolation")
+        
+        ids4 = sec22 + sec26 + sec27 + sec28
+
+        sec23 = self.get_sec(f"status23", "ChildCustody")
+        sec24 = self.get_sec(f"status24", "VotingViolation")
+        sec25 = self.get_sec(f"status25", "RenounceExp")
+        sec29 = self.get_sec(f"status29", "AttWoReimb")
+
+        ids5 = sec23 + sec24 + sec25 + sec29
+        # ids1 = [
+            # (f"{self.baseID}FormView1_rblDisease_1", ""),
+            # # (f"{self.baseID}FormView1_rblDisease_0", ""),
+            # # (f"{self.baseID}FormView1_tbxDisease", "")            
+            # (f"{self.baseID}FormView1_rblDisorder_1", ""),
+            # # (f"{self.baseID}FormView1_rblDisorder_0", ""),
+            # # (f"{self.baseID}FormView1_tbxDisorder", "")            
+            # (f"{self.baseID}FormView1_rblDruguser_1", ""),
+            # # (f"{self.baseID}FormView1_rblDruguser_0", ""),
+            # # (f"{self.baseID}FormView1_tbxDruguser", "")            
+            # (f"{self.baseID}UpdateButton3", ""),
+        # ]
+
+        # ids2 = [
+            # (f"{self.baseID}FormView1_rblArrested_1", ""),
+            # # (f"{self.baseID}FormView1_rblArrested_0", ""),
+            # # (f"{self.baseID}FormView1_tbxArrested", "")            
+            # (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
+            # # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),
+            # # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
+            # (f"{self.baseID}FormView1_rblProstitution_1", ""),
+            # # (f"{self.baseID}FormView1_rblProstitution_0", ""),
+            # # (f"{self.baseID}FormView1_tbxProstitution", "")            
+            # (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
+            # # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),
+            # # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
+            # (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
+            # # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),
+            # # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
+            # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
+            # # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),
+            # # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
+            # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
+            # # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),
+            # # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
+            # (f"{self.baseID}UpdateButton3", ""),
+        # ]
+
+        # ids3 = [
+            # (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
+            # # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),
+            # # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
+            # (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
+            # # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),
+            # # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
+            # (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
+            # # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),
+            # # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
+            # (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
+            # # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),
+            # # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
+            # (f"{self.baseID}FormView1_rblGenocide_1", ""),
+            # # (f"{self.baseID}FormView1_rblGenocide_0", ""),
+            # # (f"{self.baseID}FormView1_tbxGenocide", "")            
+            # (f"{self.baseID}FormView1_rblTorture_1", ""),
+            # # (f"{self.baseID}FormView1_rblTorture_0", ""),
+            # # (f"{self.baseID}FormView1_tbxTorture", "")            
+            # (f"{self.baseID}FormView1_rblExViolence_1", ""),
+            # # (f"{self.baseID}FormView1_rblExViolence_0", ""),
+            # # (f"{self.baseID}FormView1_tbxExViolence", "")            
+            # (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
+            # # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),
+            # # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
+            # (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
+            # # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),
+            # # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
+            # (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
+            # # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),
+            # # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
+            # (f"{self.baseID}FormView1_rblTransplant_1", ""),
+            # # (f"{self.baseID}FormView1_rblTransplant_0", ""),
+            # # (f"{self.baseID}FormView1_tbxTransplant", "")            
+            # (f"{self.baseID}UpdateButton3", ""),
+        # ]
+
+        # ids4 = [
+            # (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
+            # # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),
+            # # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
+            # (f"{self.baseID}UpdateButton3", ""),
+        # ]
+
+        # ids5 = [
+            # (f"{self.baseID}FormView1_rblChildCustody_1", ""),
+            # # (f"{self.baseID}FormView1_rblChildCustody_0", ""),
+            # # (f"{self.baseID}FormView1_tbxChildCustody", "")            
+            # (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
+            # # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),
+            # # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
+            # (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
+            # # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),
+            # # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
+            # (f"{self.baseID}UpdateButton3", ""),
+        # ]
+        
         idsDic = {
             "SecurityandBackground1": ids1,
             "SecurityandBackground2": ids2,
@@ -1769,8 +1925,11 @@ class AllPage(AutoUs):
         }
         node = self.getNode
         for i in range(int(node[-1]), 6):
-            self.urlButton(0)
-            self.waitIdSel(idsDic[node[:-1] + str(i)])
+            try:
+                self.waitIdSel(idsDic[node[:-1] + str(i)])
+            except:
+                pass
+            self.urlButton()
         
         self.progress("70% 安全与背景页 完成")
 

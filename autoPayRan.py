@@ -38,7 +38,7 @@ class RunPayInfo:
             print('\n有数据进行提交\n')
 
             # 获取需要申请的人员信息
-            self.usPay = AutoPay(data=self.usPipe.data, usPipe=self.usPipe)
+            self.usPay = AutoPay(data=self.usPipe.order_data, usPipe=self.usPipe)
             if not 1:
                 if not self.usPay.res["register_is"]:
                     self.register()
@@ -48,10 +48,10 @@ class RunPayInfo:
 
 
 def main():
-    r = RunPayInfo()
     while True:
         # r.run()
         try:
+            r = RunPayInfo()
             r.run()
         except Exception as e:
             print("====")

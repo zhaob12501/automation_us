@@ -95,13 +95,14 @@ class UsPipeline():
             sql = "SELECT * FROM dc_business_america_public_eng WHERE order_id = %s" % res["id"]
             self.cur.execute(sql)
             resPublics = self.cur.fetchall()
-            sql = "SELECT * FROM dc_business_america_info_eng WHERE aid = %s" % resPublics[0]["aid"]
+            aids = tuple([i['aid'] for i in resPublics] + [0, 0])
+            sql = f"SELECT * FROM dc_business_america_info_eng WHERE aid IN {aids}"
             self.cur.execute(sql)
             resInfos = self.cur.fetchall()
-            sql = "SELECT * FROM dc_business_america_work_eng WHERE aid = %s" % resPublics[0]["aid"]
+            sql = f"SELECT * FROM dc_business_america_work_eng WHERE aid IN {aids}"
             self.cur.execute(sql)
             resWorks = self.cur.fetchall()
-            self.data = res, resPublics, resInfos, resWorks
+            self.order_data = res, resPublics, resInfos, resWorks
             return 1
         return 0
 
@@ -158,5 +159,6 @@ class UsPipeline():
 
 
 if __name__ == "__main__":
-    u = UsPipeline()
-    u.upload('123', name="bob", xx="daf", asd="adsdf")
+    pass
+    # u = UsPipeline()
+    # u.upload('123', name="bob", xx="daf", asd="adsdf")

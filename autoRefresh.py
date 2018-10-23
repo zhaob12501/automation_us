@@ -35,7 +35,7 @@ class RunAppointment:
             print('\n有数据进行提交\n')
 
             # 获取需要申请的人员信息
-            self.usPay = AutoPay(data=self.usPipe.data, usPipe=self.usPipe)
+            self.usPay = AutoPay(data=self.usPipe.order_data, usPipe=self.usPipe)
             if self.id != self.usPay.res["id"]:
                 self.id = self.usPay.res["id"]
                 self.usPay.login()
