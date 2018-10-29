@@ -475,8 +475,7 @@ class AutoUs(Base):
         self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
         try:
             for infile in glob.glob(os.path.join(BASEDIR, 'usFile\\*.pdf')):
-                if "AppointmentConfirmation" in infile:
-                    continue
+                if "AppointmentConfirmation" in infile: continue
                 os.remove(infile)
         except:
             pass        
@@ -586,6 +585,8 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_ddlAPP_MARITAL_STATUS", self.resInfo['marriage']),
             (f"{self.baseID}FormView1_ddlAPP_POB_CNTRY", self.resInfo['date_of_country'])
         ]
+        if self.resInfo["marriage"] == "O":
+            ids.append((f"{self.baseID}FormView1_tbxOtherMaritalStatus", self.resInfo["marriage_info"]))
         self.waitIdSel(idlist=ids, selist=seList)
         self.urlButton()
 
@@ -1387,36 +1388,41 @@ class AllPage(AutoUs):
         for no, human in enumerate(json.loads(self.resInfo["spouse_former_info"])):
             idName = f"{self.baseID}FormView1_DListSpouse_ctl0{no}_"
             if no and self.old_page:
-                self.driver.find_element_by_id(f"{idName}InsertButtonSpouse").send_keys("")
+                self.Wait(f"{idName}InsertButtonSpouse", "")
             year, month, day = human["former_birth_date"].split("-")
             wYear, wMonth, wDay = human["wedding_date"].split("-")
             dYear, dMonth, dDay = human["divorce_date"].split("-")
-            self.driver.find_element_by_id(f"{idName}tbxSURNAME").send_keys(human["former_name"])
-            self.driver.find_element_by_id(f"{idName}tbxGIVEN_NAME").send_keys(human["former_names"])
+            self.Wait(f"{idName}tbxSURNAME", human["former_name"])
+            self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
+            sleep(2)
+            self.Wait(f"{idName}tbxSURNAME", human["former_name"])
+            self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
             try:
                 self.choiceSelect(f"{idName}ddlDOBDay", day)
-                self.driver.find_element_by_id(f"{idName}tbxDOBYear").send_keys(year)
-                self.driver.find_element_by_id(f"{idName}ddlDOBMonth").send_keys(MONTH[month])
-                self.driver.find_element_by_id(f"{idName}ddlDomDay").send_keys(wDay)
-                self.driver.find_element_by_id(f"{idName}txtDomYear").send_keys(wYear)
-                self.driver.find_element_by_id(f"{idName}ddlDomMonth").send_keys(MONTH[wMonth])
-                self.driver.find_element_by_id(f"{idName}ddlDomEndDay").send_keys(dDay)
-                self.driver.find_element_by_id(f"{idName}txtDomEndYear").send_keys(dYear)
-                self.driver.find_element_by_id(f"{idName}ddlDomEndMonth").send_keys(MONTH[dMonth])
+                self.Wait(f"{idName}tbxDOBYear", year)
+                self.Wait(f"{idName}ddlDOBMonth", MONTH[month])
+                self.Wait(f"{idName}ddlDomDay", wDay)
+                self.Wait(f"{idName}txtDomYear", wYear)
+                self.Wait(f"{idName}ddlDomMonth", MONTH[wMonth])
+                self.Wait(f"{idName}ddlDomEndDay", dDay)
+                self.Wait(f"{idName}txtDomEndYear", dYear)
+                self.Wait(f"{idName}ddlDomEndMonth", MONTH[dMonth])
             except:
                 pass
-            self.driver.find_element_by_id(f"{idName}tbxHowMarriageEnded").send_keys(human["divorce_info"])
+            self.Wait(f"{idName}tbxHowMarriageEnded", human["divorce_info"])
             if human["former_city"]:
-                self.driver.find_element_by_id(f"{idName}tbxSpousePOBCity").send_keys(human["former_city"])
+                self.Wait(f"{idName}tbxSpousePOBCity", human["former_city"])
             else:
-                self.driver.find_element_by_id(f"{idName}cbxSPOUSE_POB_CITY_NA").send_keys("")
+                self.Wait(f"{idName}cbxSPOUSE_POB_CITY_NA", "")
             self.choiceSelect(f"{idName}ddlSpouseNatDropDownList", human["former_country"])
             self.choiceSelect(f"{idName}ddlSpousePOBCountry", human["former_birth_country"])
             self.choiceSelect(f"{idName}ddlMarriageEnded_CNTRY", human["divorce_country"])
-            
+        
+
+
         self.urlButton()
         try:
-            errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
+            errInfos = self.Wait(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
             assert len(errInfos) > 1
             self.errJson(errInfos, '离异:')
             return 1

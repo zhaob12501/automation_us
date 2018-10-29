@@ -8,8 +8,8 @@
 from time import time
 
 from auto_us import AllPage, UsPipeline
-from auto_us.settings import (POOL, UsError, glob, json, os, sleep, strftime,
-                              sys)
+from auto_us.settings import POOL, UsError, json, os, sleep, strftime, sys
+
 st = 0
 
 
@@ -64,9 +64,9 @@ class UsRun:
 
     def con1(self):
         # self.au = AllPage(data=self.auto.data, noWin=True, usPipe=UsPipeline(self.pool))
-        if hasattr(self.au, "driver"):
+        if hasattr(self.au, "driver") and '--headless' in self.au.chrome_options._arguments:
             self.au.driver.quit()
-        self.au.getDriver(False)
+            self.au.getDriver(False)
         self.fillInfo()
         self.done()
 
@@ -83,7 +83,7 @@ class UsRun:
         # 开始执行
         # ========
         while True:
-            print('\nin run...')
+            print(f"\n{'#':=<8}#\n# DS160 #\n{'#':=<8}#")
             try:
                 self.auto = UsPipeline(pool)
             except:
@@ -91,17 +91,17 @@ class UsRun:
                     del self.auto
                 print('数据库连接超时...重连...')
                 continue
-            print('数据库连接完毕...')
+            # print('数据库连接完毕...')
 
             # 获取数据库信息
             data = self.auto.selDBInfo
-            print(f"data: {data}")
+            # print(f"data: {data}")
             # 判断是否需要申请
             if data:
                 # =======
                 # 数据处理
                 # =======
-                print('\n有数据进行提交\n')
+                print('有数据进行提交\n')
                 self.au = AllPage(data=self.auto.data,
                                   noWin=True, usPipe=UsPipeline(self.pool))
                 # self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
@@ -116,16 +116,20 @@ class UsRun:
                 if self.auto:
                     del self.auto
 
+            try:
+                self.au.driver.quit()
+            except:
+                pass
+
             if hasattr(self, "au"):
                 del self.au
-            print('没有数据, 等待中...')
+            print('没有数据, 等待中...', strftime('%m/%d %H:%M:%S'))
             # try:
             #     self.au.driver.get(self.au.usUrl)
             # except:
             #     if hasattr(self.au, 'driver'):
             #         self.au.driver.quit()
             #     self.au.getDriver
-            print(strftime('%m/%d %H:%M:%S'))
             sleep(5)
 
     def __del__(self):
@@ -147,6 +151,8 @@ def main():
             print("in e error")
             print(f"other:\n{e}")
             print("sleep 30s")
+        finally:
+            del r
         sleep(5)
 
 

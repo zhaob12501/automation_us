@@ -38,7 +38,7 @@ class UsPipeline():
             self.cur.execute(sql)
             resPublic = self.cur.fetchone()
             if not resPublic:
-                print('无数据')
+                # print('无数据')
                 return 0
 
         sql = f"SELECT * FROM dc_business_america_info_eng WHERE aid = {resPublic['aid']}"
@@ -73,7 +73,7 @@ class UsPipeline():
         apSql = ', '.join([f'ap.{key}="{val}"' for key, val in kwargs.items()])
 
         sql = f'''UPDATE dc_business_america_public_eng AS ape, dc_business_america_public AS ap SET {apeSql}, {apSql} WHERE  ape.aid = {aid} AND  ap.aid = {aid}''' 
-        print(repr(sql))
+        print(kwargs.get("progress"))
         # sys.exit(1)
         try:
             self.cur.execute(sql) 
@@ -90,8 +90,8 @@ class UsPipeline():
         # sql = "SELECT * FROM dc_business_america_order WHERE id=16"
         self.cur.execute(sql)
         res = self.cur.fetchone()
-        print(res)
         if res:
+            print(res)
             sql = "SELECT * FROM dc_business_america_public_eng WHERE order_id = %s" % res["id"]
             self.cur.execute(sql)
             resPublics = self.cur.fetchall()
@@ -108,7 +108,7 @@ class UsPipeline():
 
     def selAppointment(self):
         sql = f"SELECT * FROM dc_business_america_order WHERE interview_status=1"
-        # sql = f"SELECT * FROM dc_business_america_order WHERE id=31"
+        # sql = f"SELECT * FROM dc_business_america_order WHERE id=59"
         if self.selDBOrder(sql):
             return 1
         return 0
@@ -132,16 +132,23 @@ class UsPipeline():
             self.con.rollback()
             raise UsError(e)
         
-    def uploadDays(self, date, country):
+    def uploadDays(self, activity, **kwargs):
         """ 更新可预约时间表 """
-        sql = f'UPDATE dc_america_interview_days SET interview_days="{date}", utime="{int(time())}" WHERE activity="{country}"'
+        if not (activity and kwargs):
+            raise UsError("数据库修改值不能为空")
+        cSql = ', '.join([f"{key}='{val}'" for key, val in kwargs.items()])
+        if kwargs.get("interview_days"):
+            cSql += f', utime={int(time())}'
+        if kwargs.get("replace_interview_days"):
+            cSql += f", replace_utime='{int(time())}'"
+        sql = f'UPDATE dc_america_interview_days SET {cSql} WHERE activity="{activity}"'
         try:
             self.cur.execute(sql)
             self.con.commit()
         except Exception as e:
             print('数据库执行出错, 进行回滚...')
             self.con.rollback()
-            raise UsError(f"{e}\n{country}")
+            raise UsError(f"{e}\n{activity}")
 
     def get_group_email(self, mpid):
         sql = f"SELECT * FROM dc_business_america_email WHERE mpid={mpid}"

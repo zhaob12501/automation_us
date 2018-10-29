@@ -4,7 +4,7 @@ import requests
 from PIL import Image
 
 from .autoUS import AutoUs, Select
-from .settings import (APPDAYS, MON, NC, PASSWD, USER, UsError, json, sleep,
+from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json, sleep,
                        strftime, time)
 
 
@@ -72,6 +72,7 @@ class AutoPay(AutoUs):
                 # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", "janice522")
                 self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
                 result = self.getCaptcha( "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
+                result = result.replace("1", "l")
                 self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
                 sleep(0.5)
                 # 点击登陆
@@ -440,11 +441,11 @@ class AutoPay(AutoUs):
         userDate = json.loads(self.res["interview_time"])
 
         # userDate["day"] = userDate["day"].split(",")
-        tim = {
-            "am": APPDAYS[:5],
-            "pm": APPDAYS[-4:],
-            "am,pm": APPDAYS
-        }
+        # tim = {
+        #     "am": APPDAYS[:5],
+        #     "pm": APPDAYS[-4:],
+        #     "am,pm": APPDAYS
+        # }
         if userDate["day"] in data:
             d = f'{userDate["day"].split("-")[0]:0>2}'
             mo = f'{userDate["day"].split("-")[1]:0>2}'
@@ -468,23 +469,18 @@ class AutoPay(AutoUs):
             self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
             reg = r'<td>(\d\d:\d\d)</td>'
             times = re.findall(reg, self.driver.page_source)
-            if userDate["day"] in times:
+            if userDate["t"] in times:
                 self.Wait(
-                    xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["day"]}")]/preceding-sibling::td[1]/input')
+                    xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["t"]}")]/preceding-sibling::td[1]/input')
                 s_time = self.driver.find_element_by_xpath(
-                    f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["day"]}")]').text
+                    f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["t"]}")]').text
                 self.Wait("thePage:SiteTemplate:theForm:addItem")
                 self.Wait(
                     xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
                 self.Wait(
                     xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
-                file = {
-                    "file": (
-                        "AppointmentConfirmation.pdf",
-                        open("./usFile/AppointmentConfirmation.pdf", "rb"),
-                        "application/pdf"
-                    )
-                }
+                with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+                    file = {"file": ("AppointmentConfirmation.pdf", f.read(), "application/pdf")}
                 url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
                 res = requests.post(url, files=file).json()
                 success_time = f"{'-'.join([userDate['day'].split('-')][::-1])} {s_time}"
@@ -493,7 +489,7 @@ class AutoPay(AutoUs):
                 print("预约成功")
                 return
         self.getDates(error=True)
-        self.usPipe.uploadOrder(self.res["id"], interview_times=None, interview_status='5')
+        self.usPipe.uploadOrder(self.res["id"], interview_status='5')
 
     def cancel(self):
         self.login()
@@ -519,6 +515,33 @@ class AutoPay(AutoUs):
         self.mail()
         self.receipt()
         self.driver.quit()
+
+    def add_user(self):
+        self.Wait(css="#summary", text=NC)
+        lis = self.driver.find_elements_by_css_selector("#summary > ul > li")
+        for _ in range(len(lis)):
+            self.Wait(css=".ui-icon-close:nth-child(1)")
+            self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
+        
+
+        for i in range(len(self.all_data[2])):
+            pub = self.all_data[1][i]
+            info = self.all_data[2][i]
+            work = self.all_data[3][i]
+            user = (pub, info, work)
+            try:
+                if self.res["interview_status"] == 1:
+                    self.add_new_user(user)
+                else:
+                    self.add_old_user(user)
+            except:
+                self.add_new_user(user)
+
+            sleep(3)
+        # 截图
+        self.pay_user_img()
+        # 下一步
+        self.driver.find_element_by_css_selector("input[type='button']").click()
 
     def add_new_user(self, user):
         resPublic, resInfo, _ = user
@@ -549,9 +572,16 @@ class AutoPay(AutoUs):
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
         sleep(1)
         
-    def add_old_user(self, pub):
+    def add_old_user(self, user):
+        self.Wait(css="#create-addApplicants > span")
+        self.Wait(xpath='//div[@id="dialog-formAddExisting"]//table')
+        eng_names = f'{user[1]["english_name_s"]} {user[1]["english_name"]}'
+        divs = self.driver.find_elements_by_xpath(f'//div[@id="dialog-formAddExisting"]//div')
+        div = [i for i in divs if i.text.strip() == eng_names][0]
+        div.find_element_by_css_selector("input").click()
+        self.driver.find_element_by_xpath('/html/body/div[6]/div[3]/div/button[1]/span').click()
         self.Wait(xpath='//*[@id="summary"]/ul/li[1]/div[2]/span')
-        self.Wait(css=".requiredInput > .formDs160", text=pub["aacode"])   
+        self.Wait(css=".requiredInput > .formDs160", text=user[0]["aacode"])   
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
 
     # 保存截图
@@ -670,51 +700,64 @@ class AutoPay(AutoUs):
                 return code
             else:
                 print('没有付款编号')
-        print(111)
-        print(111)
 
     # 预约查询
-    def selApp(self):
+    def selApp(self, cancel=False):
         # self.driver.get("https://cgifederal.secure.force.com/ApplicantHome")
         self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(2) > a')
+        trs = self.driver.find_elements_by_xpath('//table[1]//tr')[1:]
+        for i in range(len(self.all_data[2])):
+            info = self.all_data[2][i]
+            for tr in trs:
+                if f'{info["english_name_s"]} {info["english_name"]}' in tr.text and "*Updated*" in tr.text:
+                    # 撤销
+                    if cancel == 1:
+                        tr.find_element_by_xpath(".//li//ul/li[2]/a").click()
+
+                    elif cancel:
+                        tr.find_element_by_xpath(".//li//ul/li[5]/a").click()
+                        if cancel == 3:
+                            times = self.driver.find_element_by_xpath('//table[@role="presentation"]').text.split('\n')
+                            date_times = {}
+                            for time in times:
+                                date = time.split(' ')
+                                day = f"{int(date[3].strip(','))}-{MON_ANTI[date[2]]}-{date[4]}"
+                                ti = date[0]
+                                if not date_times.get(day): date_times[day] = [ti]
+                                else: date_times[day].append(ti)
+                            dates = '|'.join([f"{i}&{','.join(date_times[i])}" for i in date_times])
+                            self.usPipe.uploadDays(info["activity"], replace_interview_days=dates)
+
+                        elif cancel == 2 and self.res["interview_time"]:
+                            userDate = json.loads(self.res["interview_time"])
+                            userDateDay = userDate["day"].split('-')
+                            userDateDay[1] = f"{userDateDay[1]:0>2}"
+                            date = f'{MON[userDateDay[1]]} {userDateDay[0]}, {userDateDay[2]}'
+                            tds = self.driver.find_elements_by_xpath('//table[@role="presentation"]//td')
+                            [td.find_element_by_xpath("./input").click for td in tds if date and userDate["t"] in td.find_element_by_xpath("./lable").text]
+                            self.driver.find_element_by_xpath('/html/body/div[3]/div[3]/div/button[1]/span').click()
+
+                    tds = tr.text.split("\n")
+                    _, month, day, year = tds[0].split(' ')
+                    success_time = f"{year}-{MON_ANTI[month]}-{day} {tds[1]}"
+                    self.usPipe.uploadOrder(self.res["id"], interview_status=6, python_status=0, interview_success=success_time)
+                    return 1
+
+        if cancel == 1:
+            self.usPipe.uploadOrder(self.res["id"], interview_status=9, replace=0, interview_success=None)
+            return 1
         self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)', text=f'{self.resInfo["english_name_s"]} {self.resInfo["english_name"]}')
         self.Wait(css='#dashboard > span > form > input[type="submit"]:nth-child(3)')
-        self.Wait(css='table > tbody > tr > td:nth-child(2) > span > a')
+        self.Wait(xpath='//table[1]', text=NC)
+        try:
+            self.driver.find_element_by_css_selector('table > tbody > tr > td:nth-child(2) > span > a')
+        except:
+            self.driver.find_element_by_css_selector('#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
 
-    def add_user(self):
-        self.Wait(css="#summary", text=NC)
-        lis = self.driver.find_elements_by_css_selector("#summary > ul > li")
-        for _ in range(len(lis)):
-            self.Wait(css=".ui-icon-close:nth-child(1)")
-            self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
-        
-
-        for i in range(len(self.all_data[2])):
-            pub = self.all_data[1][i]
-            info = self.all_data[2][i]
-            work = self.all_data[3][i]
-            user = (pub, info, work)
-            self.Wait(css="#create-addApplicants > span")
-            self.Wait(xpath='//div[@id="dialog-formAddExisting"]//table')
-            eng_names = f'{info["english_name_s"]} {info["english_name"]}'
-            try:
-                divs = self.driver.find_elements_by_xpath(f'//div[@id="dialog-formAddExisting"]//div')
-                div = [i for i in divs if i.text.strip() == eng_names][0]
-                div.find_element_by_css_selector("input").click()
-                self.driver.find_element_by_xpath('/html/body/div[6]/div[3]/div/button[1]/span').click()
-                self.add_old_user(pub)
-            except:
-                self.Wait(xpath='/html/body/div[6]/div[1]/a/span')     
-                self.add_new_user(user)
-            sleep(3)
-        # 截图
-        self.pay_user_img()
-        # 下一步
-        self.driver.find_element_by_css_selector("input[type='button']").click()
-
+    # 开始预约
     def group_pay_over(self):
         self.groupLogin()
-        self.selApp()
+        if self.selApp(self.res["replace"]): return
         self.middle()
         self.add_user()
         # self.Wait(css="input[type='button']")
@@ -771,7 +814,8 @@ class AutoPay(AutoUs):
                 post_data["com.salesforce.visualforce.ViewStateMAC"] = datas[2]
                 post_data["com.salesforce.visualforce.ViewStateCSRF"] = datas[3]
             # 返回可预约日期
-            self.usPipe.uploadDays(json.dumps(appointment_dates), self.resInfo["activity"])
+            dates = '|'.join([f"{i}&{appointment_dates[i]}" for i in appointment_dates])
+            self.usPipe.uploadDays(self.resInfo["activity"], interview_days=dates)
             self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return dates
 
@@ -783,3 +827,6 @@ class AutoPay(AutoUs):
         if self.res["interview_status"] == 4:
             self.appointment(dates)
 
+    # def group_cancel(self):
+    #     self.groupLogin()
+    #     self.selApp(True)
