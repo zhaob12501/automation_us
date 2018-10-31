@@ -27,3 +27,4 @@ settings.py
 .vscode
 text.py
 *.txt
+evus/*
