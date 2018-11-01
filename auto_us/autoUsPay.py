@@ -612,7 +612,7 @@ class AutoPay(AutoUs):
         radio = self.Wait(css='table > tbody > tr:nth-child(2) > td > input', text=NC)
         if not radio.is_selected():
             radio.click()
-            self.Wait(css=".ui-button-text")
+            self.Wait(xpath='/html/body/div[3]/div[3]/div/button/span')
         self.Wait(css='input.continue')
         lq = {"BEJ": 1, "CHE": 2, "GUZ": 3, "SHG": 4, "SNY": 5,}
         self.Wait(css=f"table > tbody > tr:nth-child({lq[self.resInfo['activity']]}) > td > input")
