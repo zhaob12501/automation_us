@@ -29,6 +29,7 @@ class RunAppointment:
                     del self.usPay
                 print('没有数据, 等待中...', strftime('%m/%d %H:%M:%S'))
                 sleep(5)
+                os.system("cls")                
                 continue
 
             # =======
@@ -73,4 +74,5 @@ def main():
 
 
 if __name__ == '__main__':
+    sleep(60)
     main()

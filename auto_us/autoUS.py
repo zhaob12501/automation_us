@@ -837,7 +837,8 @@ class AllPage(AutoUs):
             ]
             seList = self.waitIdSel(selist=seList)
         sleep(1)
-        self.choiceSelect(f"{self.baseID}FormView1_ddlWhoIsPaying", self.resPublic['travel_cost_pay'])
+        sel = Select(self.driver.find_element_by_id(f"{self.baseID}FormView1_ddlWhoIsPaying"))
+        sel.select_by_value(self.resPublic['travel_cost_pay'])
         if self.resPublic['travel_plans_is'] == "N":
             year, mon, day = self.resPublic['arrive_time'].split('-')
             try:
@@ -886,10 +887,14 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_tbxCity", self.resPublic['stay_city']),
             (f"{self.baseID}FormView1_tbZIPCode", self.resPublic['stay_zip']),
         ]
-
+        ids = self.waitIdSel(ids)
         if self.resPublic['travel_cost_pay'] == 'O':
+            try: self.Wait(f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name'])
+            except: 
+                sel.select_by_index(0)
+                sel.select_by_value(self.resPublic['travel_cost_pay'])
+                ids.append((f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']))
             ids += [
-                (f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']),
                 (f"{self.baseID}FormView1_tbxPayerGivenName", self.resPublic['pay_personal_names']),
                 (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
                 (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
@@ -899,6 +904,7 @@ class AllPage(AutoUs):
             else:
                 ids.append((f"{self.baseID}FormView1_cbxDNAPAYER_EMAIL_ADDR_NA", ""))
             # 与您的关系
+            ids = self.waitIdSel(ids)
             # self.choiceSelect(f"{self.baseID}FormView1_ddlPayerRelationship", self.resPublic['pay_personal_relation'])
             s = Select(self.driver.find_element_by_id(f"{self.baseID}FormView1_ddlPayerRelationship"))
             s.select_by_value(self.resPublic['pay_personal_relation'])
@@ -923,7 +929,8 @@ class AllPage(AutoUs):
 
                 ids = self.waitIdSel(ids)
                 self.choiceSelect(f"{self.baseID}FormView1_ddlPayerCountry", self.resPublic['pay_personal_country'])
-
+            else:
+                self.errJson(["为您支付旅行费用的一方未填写"], '同行人:')
         # 其它公司机构
         if self.resPublic['travel_cost_pay'] == 'C':
             ids += [

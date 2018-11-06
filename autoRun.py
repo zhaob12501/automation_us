@@ -131,6 +131,7 @@ class UsRun:
             #         self.au.driver.quit()
             #     self.au.getDriver
             sleep(5)
+            os.system("cls")
 
     def __del__(self):
         if hasattr(self, "pool"):
@@ -157,5 +158,6 @@ def main():
 
 
 if __name__ == '__main__':
+    sleep(60)
     print(strftime("%Y-%m-%d %H-%M-%S"))
     main()
