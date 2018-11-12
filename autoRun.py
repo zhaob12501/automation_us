@@ -158,6 +158,6 @@ def main():
 
 
 if __name__ == '__main__':
-    sleep(60)
+    # sleep(60)
     print(strftime("%Y-%m-%d %H-%M-%S"))
     main()

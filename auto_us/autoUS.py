@@ -24,6 +24,40 @@ from .settings import (BASEDIR, MON, MONTH, NC, PASSWD, USER, USERPHOTO,
 from .yunsu import upload
 
 
+nodeInfo = {
+    "Personal1": "5% 个人信息1",
+    "Personal2": "10% 个人信息2",
+    "AddressPhone": "15% 地址和电话页",
+    "PptVisa": "20% 护照页",
+    "Travel": "25% 旅行页",
+    "TravelCompanions": "30% 旅行同伴页",
+    "PreviousUSTravel": "35% 以前美国之行",
+    "USContact": "40% 美国联系人信息",
+    "Relatives": "45% 家庭/亲属页",
+    "Spouse": "50% 配偶页",
+    "DeceasedSpouse": "50% 丧偶页",
+    "PrevSpouse": "50% 离异页",
+    "WorkEducation1": "55% 工作教育",
+    "WorkEducation2": "60% 以前的工作/培训页",
+    "WorkEducation3": "65% 工作补充页",
+    "SecurityandBackground1": "70% 安全与背景页",
+    "SecurityandBackground2": "70% 安全与背景页",
+    "SecurityandBackground3": "70% 安全与背景页",
+    "SecurityandBackground4": "70% 安全与背景页",
+    "SecurityandBackground5": "70% 安全与背景页",
+    "UploadPhoto": "80% 上传照片页",
+    "ConfirmPhoto": "80% 上传照片页",
+    "ReviewPersonal": "90% 审查页面",
+    "ReviewTravel": "90% 审查页面",
+    "ReviewUSContact": "90% 审查页面",
+    "ReviewFamily": "90% 审查页面",
+    "ReviewWorkEducation": "90% 审查页面",
+    "ReviewSecurity": "90% 审查页面",
+    "ReviewLocation": "90% 审查页面",
+    "SignCertify": "95% 最后确认页面",
+}
+
+
 class Base:
     """ 浏览器基类, 保持同一个 driver """
 
@@ -121,10 +155,10 @@ class Base:
                 idName, xpath, className: 选择器规则, 默认idName
                 text: 需要发送的信息 (非 NC --> 'noClick')
         """
-        try:
-            assert idName or xpath or css
-        except AssertionError:
-            raise UsError('未传选择器')
+        # try:
+        #     assert idName or xpath or css
+        # except AssertionError:
+        #     raise UsError('未传选择器')
         if idName:
             locator = ("id", idName)
         elif xpath:
@@ -133,8 +167,7 @@ class Base:
             locator = ("css selector", css)
 
         try:
-            self.wait.until(EC.presence_of_element_located(locator))
-            element = self.driver.find_element(*locator)
+            element = self.wait.until(EC.presence_of_element_located(locator))
             if not text and not element.is_selected():
                 element.click()
             elif text and text != NC:
@@ -157,11 +190,11 @@ class Base:
         """ 下拉框选择器
             根据 value 选择下拉框
         """
-        try:
-            assert selectid and value
-        except AssertionError:
-            raise UsError(
-                f'下拉框选择器 ID 和 value 不能为空\nselectid: {selectid}\nvalue   : {value}')
+        # try:
+        #     assert selectid and value
+        # except AssertionError:
+        #     raise UsError(
+        #         f'下拉框选择器 ID 和 value 不能为空\nselectid: {selectid}\nvalue   : {value}')
         sleep(t)
         self.Wait(selectid, text=NC)
         try:
@@ -233,7 +266,10 @@ class AutoUs(Base):
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
-        self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
+        if self.resInfo['activity']:
+            self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
+        else:
+            self.errJson([], '领区未选')
         # self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", 'BEJ')
         #　识别验证码
         while self.driver.current_url == self.usUrl:
@@ -259,8 +295,11 @@ class AutoUs(Base):
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
-        self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
-
+        if self.resInfo['activity']:
+            self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
+        else:
+            self.errJson([], '领区未选')
+        
         while self.driver.current_url == self.usUrl:
             try:
                 result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
@@ -279,11 +318,19 @@ class AutoUs(Base):
             (f'{self.baseID}ApplicationRecovery1_txbAnswer', self.answer),
             (f'{self.baseID}ApplicationRecovery1_btnRetrieve', ""),
         ]
-        for i in ids:
-            self.Wait(i[0], i[1])
-        while self.getNode == "":
-            pass
-
+        self.waitIdSel(ids)
+        for i in range(2):
+            if self.getNode != "":
+                break
+            sleep(1)
+        else:
+            try: 
+                self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_pnlSubmittedApp", text=NC)
+                self.errJson(["已出签"], "该信息已出签")
+                return 1
+            except:
+                pass
+        
         if noback:
             self.Wait(f"{self.baseID}UpdateButton3")
         else:
@@ -297,6 +344,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Primary Phone Number has not been completed.": "主要电话未填",
             "Alias matches Given Name.": "曾用名有误",
             "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
             "Surnames has not been completed.": "姓氏未填",
@@ -424,20 +472,19 @@ class AutoUs(Base):
         # err = json.dumps(ls).replace('\\', '\\\\')
         err = '|'.join(ls)
         # self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        if self.resPublic["conditions"] == 3:
+        if self.resPublic["conditions"] == 1:
             self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        elif self.resPublic["conditions"] < 3:
+        elif self.resPublic["conditions"] < 1:
             self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
-        elif self.resPublic["conditions"] > 3:
+        elif self.resPublic["conditions"] > 1:
             self.usPipe.upload(self.resPublic['aid'], conditions=0)
     
     # 进度条
     def progress(self, info):
         self.usPipe.upload(self.resPublic["aid"], progress=info)
 
-    def urlButton(self, button=1):
-        if button:
-            self.Wait(f"{self.baseID}UpdateButton3")
+    def urlButton(self):
+        self.Wait(f"{self.baseID}UpdateButton3")
 
     def printPdf(self):
         self.driver.execute_script("window.print()")
@@ -510,23 +557,30 @@ class AllPage(AutoUs):
             "SecurityandBackground4": self.securityAndBackground,
             "SecurityandBackground5": self.securityAndBackground,
             "UploadPhoto": self.uploadPhoto,
-            "ConfirmPhoto": self.review,
-            "ReviewPersonal": self.review,
-            "ReviewTravel": self.review,
-            "ReviewUSContact": self.review,
-            "ReviewFamily": self.review,
-            "ReviewWorkEducation": self.review,
-            "ReviewSecurity": self.review,
-            "ReviewLocation": self.review,
+            "ConfirmPhoto": self.urlButton,
+            "ReviewPersonal": self.urlButton,
+            "ReviewTravel": self.urlButton,
+            "ReviewUSContact": self.urlButton,
+            "ReviewFamily": self.urlButton,
+            "ReviewWorkEducation": self.urlButton,
+            "ReviewSecurity": self.urlButton,
+            "ReviewLocation": self.urlButton,
             "SignCertify": self.signCertify,
         }
+        if self.resPublic["inspect"] and self.getNode in ["ReviewPersonal", "ReviewTravel", "ReviewUSContact", "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity", "ReviewLocation", "SignCertify"]:
+            self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
+            return 1
 
-        while self.getNode and self.getNode != 'SignCertify':
-            if self.nodeDict[self.getNode]():
-                return 1
-        if self.getNode == 'SignCertify':
-            self.usPipe.upload(self.resPublic["aid"], visa_status="1")
-        return 0
+        try:
+            while self.getNode and self.getNode != 'SignCertify':
+                self.progress(nodeInfo[self.getNode])
+                if self.nodeDict[self.getNode]():
+                    return 1
+            if self.getNode == 'SignCertify':
+                self.usPipe.upload(self.resPublic["aid"], visa_status="1")
+            return 0
+        except:
+            self.errJson(["信息有误"], nodeInfo[self.getNode])
 
     # ================== #
     #    各个页面函数    #
@@ -839,6 +893,10 @@ class AllPage(AutoUs):
         sleep(1)
         sel = Select(self.driver.find_element_by_id(f"{self.baseID}FormView1_ddlWhoIsPaying"))
         sel.select_by_value(self.resPublic['travel_cost_pay'])
+
+        # is_child = False
+        # birth = self.resInfo["date_of_birth"]
+
         if self.resPublic['travel_plans_is'] == "N":
             year, mon, day = self.resPublic['arrive_time'].split('-')
             try:
@@ -853,10 +911,8 @@ class AllPage(AutoUs):
             ]
             ids = self.waitIdSel(ids)
 
-            seList = [
-                (f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times']),
-            ]
-            seList = self.waitIdSel(selist=seList)
+            self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
+
         elif self.resPublic['travel_plans_is'] == "Y":
             # 到达美国日期/航班/到达城市/离美日期/航班/离美城市/请提供您在美期间计划访问的地点名称
             plans = json.loads(self.resPublic['plans_info'])
@@ -879,7 +935,19 @@ class AllPage(AutoUs):
                 if index and self.old_page:
                     ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index - 1}_InsertButtonTravelLoc", ""))
                 ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index}_tbxSPECTRAVEL_LOCATION", value["city"]))
-        
+            try:
+                ids = self.waitIdSel(ids)
+            except:
+                year, mon, day = self.resPublic['arrive_time'].split('-')
+                ids = [
+                    (f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", day),
+                    (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
+                    (f"{self.baseID}FormView1_ddlTRAVEL_DTEMonth", MONTH[mon]),
+                    (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
+                ]
+                ids = self.waitIdSel(ids)
+                self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
+
         # 在美停留期间的住址
         ids += [
             (f"{self.baseID}FormView1_tbxStreetAddress1", self.resPublic['stay_address'][:40]),
@@ -1287,6 +1355,15 @@ class AllPage(AutoUs):
             "W": self.deceasedSpouse,
             "D": self.prevSpouse,
         }
+        node = self.getNode
+        if self.resInfo["marriage"] in ["S", "O"] or (self.resInfo["marriage"] in ["M", "C", "P", "L"] and node != "Spouse") or (self.resInfo["marriage"] == "W" and node != "DeceasedSpouse") or (self.resInfo["marriage"] == "D" and node != "PrevSpouse"):
+            self.driver.get("https://ceac.state.gov/GenNIV/General/complete/complete_personal.aspx?node=Personal1")
+            self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlAPP_MARITAL_STATUS", self.resInfo["marriage"])
+            if self.resInfo["marriage"] == "O":
+                self.Wait(f"{self.baseID}FormView1_tbxOtherMaritalStatus", self.resInfo["marriage_info"])
+            self.urlButton()
+            self.driver.get("https://ceac.state.gov/GenNIV/General/complete/complete_family1.aspx?node=Relatives")
+            self.urlButton()
         return familyDict[self.resInfo["marriage"]]()
 
     def spouse(self):
@@ -1979,7 +2056,6 @@ class AllPage(AutoUs):
             ("ctl00_cphButtons_btnContinue", ""),
             (f"{self.baseID}UpdateButton3", "")
         ]
-        self.urlButton(0)
         self.waitIdSel(ids)
 
         self.progress("80% 上传照片页 完成")
@@ -1988,12 +2064,11 @@ class AllPage(AutoUs):
             return 1
         return 0
 
-    def review(self):
-        """ 审查页面 """
-        print("审查页面")
-        self.urlButton(0)
-        self.Wait(f"{self.baseID}UpdateButton3")
-        return 0
+    # def review(self):
+        # """ 审查页面 """
+        # print("审查页面")
+        # self.urlButton()
+        # return 0
 
     def signCertify(self):
         """ 最后确认页面 """
