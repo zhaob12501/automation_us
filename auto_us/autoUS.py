@@ -327,6 +327,7 @@ class AutoUs(Base):
             try: 
                 self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_pnlSubmittedApp", text=NC)
                 self.errJson(["已出签"], "该信息已出签")
+                self.usPipe.upload(aid=self.resPublic["aid"], status="4")
                 return 1
             except:
                 pass
@@ -344,6 +345,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
             "Primary Phone Number has not been completed.": "主要电话未填",
             "Alias matches Given Name.": "曾用名有误",
             "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
@@ -527,6 +529,10 @@ class AutoUs(Base):
         except:
             pass        
         return 0
+
+    def cos(self, s):
+        """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格 """
+        return re.sub("[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
 
 
 class AllPage(AutoUs):
@@ -775,15 +781,15 @@ class AllPage(AutoUs):
             seList.append((f"{self.baseID}FormView1_ddlMailCountry", self.resInfo['mailing_address_nationality']))
 
         # 主要电话
-        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone']))
+        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone'].replace("-", "")))
         # 次要电话
         if self.resInfo['tel']:
-            ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel'].replace("-", "")))
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_MOBILE_TEL_NA", ""))
         # 工作电话
         if self.resInfo['company_phone']:
-            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone']))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone'].replace("-", "")))
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_BUS_TEL_NA", ""))
 
@@ -826,7 +832,7 @@ class AllPage(AutoUs):
         print(eYear, eMon, eDay)
         ids += [
             #　护照类型/护照号
-            (f"{self.baseID}FormView1_tbxPPT_NUM", self.resInfo['passport_number']),
+            (f"{self.baseID}FormView1_tbxPPT_NUM", self.cos(self.resInfo['passport_number'])),
             # (f"{self.baseID}FormView1_cbexPPT_BOOK_NUM_NA", ""),
             # 护照签发城市
             (f"{self.baseID}FormView1_tbxPPT_ISSUED_IN_CITY", self.resInfo['place_of_issue']),
@@ -1003,7 +1009,7 @@ class AllPage(AutoUs):
         if self.resPublic['travel_cost_pay'] == 'C':
             ids += [
                 # 承担您旅行费用的公司或组织名称
-                (f"{self.baseID}FormView1_tbxPayingCompany", self.resPublic["pay_group_name"]),
+                (f"{self.baseID}FormView1_tbxPayingCompany", self.cos(self.resPublic["pay_group_name"])),
                 # 电话号码
                 (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic["pay_group_phone"]),
                 # 与您的关系
@@ -1547,7 +1553,7 @@ class AllPage(AutoUs):
 
         ids = [
             # 当前工作单位或学校的名称
-            (f"{self.baseID}FormView1_tbxEmpSchName", self.resWork["company_name"].replace(",", "&").replace(".", "")),
+            (f"{self.baseID}FormView1_tbxEmpSchName", self.cos(self.resWork["company_name"])),
             # 街道地址（第一行）
             (f"{self.baseID}FormView1_tbxEmpSchAddr1", self.resWork["company_address"][:40]),
             # 街道地址（第二行）
@@ -1627,7 +1633,7 @@ class AllPage(AutoUs):
                     return 1
                 ids += [
                     # 公司名
-                    (f"{ferId}tbEmployerName", work["company_name"].replace(",", "&").replace(".", "")),
+                    (f"{ferId}tbEmployerName", self.cos(work["company_name"])),
                     # 公司地址1
                     (f"{ferId}tbEmployerStreetAddress1", work["company_address"][:40]),
                     # 公司地址2
@@ -1693,7 +1699,7 @@ class AllPage(AutoUs):
                     ids.append((f"{self.baseID}FormView1_dtlPrevEduc_ctl0{no - 1}_InsertButtonPrevEduc", ""))
                 ids += [
                     # 学校名称
-                    (f"{ferId}tbxSchoolName", school["name"].replace(",", "&").replace(".", "")),
+                    (f"{ferId}tbxSchoolName", self.cos(school["name"])),
                     # 地址
                     (f"{ferId}tbxSchoolAddr1", school["address"][:40]),
                     # 地址2

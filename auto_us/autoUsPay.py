@@ -81,6 +81,9 @@ class AutoPay(AutoUs):
                     "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:loginButton")
                 if "无法核实验证码。请重新输入。" in self.driver.page_source:
                     continue
+                elif "确保用户名和密码正确" in self.driver.page_source:
+                    self.usPipe.upload(aid=self.resPublic["aid"], ques="邮箱用户名或密码不正确", interview_status="0")
+                    return 1
                 else: break
                 sleep(0.1)
             except:
@@ -92,7 +95,7 @@ class AutoPay(AutoUs):
     def payInfo(self):
         """ 付款页面 """
         if self.driver.current_url != "https://cgifederal.secure.force.com/applicanthome":
-            self.login()
+            if self.login(): return 1
         xp = '//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "新的签证申请")]'
         self.Wait(xpath=xp)
         self.Wait("j_id0:SiteTemplate:theForm:ttip:2")
@@ -492,7 +495,7 @@ class AutoPay(AutoUs):
         self.usPipe.uploadOrder(self.res["id"], interview_status='5')
 
     def cancel(self):
-        self.login()
+        if self.login(): return 1
         self.Wait(xpath='//a[contains(text(),"取消预约")]')
         self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id120"]/table/tbody/tr[14]/td/input[1]')
         print("取消成功")
@@ -503,11 +506,12 @@ class AutoPay(AutoUs):
         if self.group_email_info["status"] == 1:
             self.email = self.group_email_info["email"]
             pwd = self.group_email_info["password"]
-        self.login(pwd)
-        
+        if self.login(pwd): return 1
+        return 0
+
     # 查询预约付款号
     def groupAppointment(self):
-        self.groupLogin()
+        if self.groupLogin(): return 1
         self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
         # 中间操作
         self.middle()
@@ -530,10 +534,12 @@ class AutoPay(AutoUs):
             work = self.all_data[3][i]
             user = (pub, info, work)
             try:
-                if self.res["interview_status"] == 1:
+                # if self.res["interview_status"] == 1:
+                #     self.add_new_user(user)
+                # else:
+                #     self.add_old_user(user)
+                if self.add_old_user(user):
                     self.add_new_user(user)
-                else:
-                    self.add_old_user(user)
             except:
                 self.add_new_user(user)
 
@@ -577,12 +583,16 @@ class AutoPay(AutoUs):
         self.Wait(xpath='//div[@id="dialog-formAddExisting"]//table')
         eng_names = f'{user[1]["english_name_s"]} {user[1]["english_name"]}'
         divs = self.driver.find_elements_by_xpath(f'//div[@id="dialog-formAddExisting"]//div')
-        div = [i for i in divs if i.text.strip() == eng_names][0]
+        div = [i for i in divs if i.text.strip() == eng_names]
+        if not div:
+            return 1
+        div = div[0]
         div.find_element_by_css_selector("input").click()
         self.driver.find_element_by_xpath('/html/body/div[6]/div[3]/div/button[1]/span').click()
         self.Wait(xpath='//*[@id="summary"]/ul/li[1]/div[2]/span')
         self.Wait(css=".requiredInput > .formDs160", text=user[0]["aacode"])   
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
+        return 0
 
     # 保存截图
     def pay_user_img(self):
@@ -677,7 +687,8 @@ class AutoPay(AutoUs):
             # self.Wait(
             #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
 
-        self.Wait(xpath='//table[1]/tbody/tr[6]/td[2]/input')
+        # self.Wait(xpath='//table[1]/tbody/tr[6]/td[2]/input')
+        self.Wait(css="tr > td:last-child > input[type='submit']")
         # 付款
         # print("付款")
         # self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
