@@ -3,9 +3,9 @@ import re
 import requests
 from PIL import Image
 
-from .autoUS import AutoUs, Select
-from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json, sleep,
-                       strftime, time)
+from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
+from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
+                       sleep, strftime, time)
 
 
 class AutoPay(AutoUs):
@@ -15,6 +15,7 @@ class AutoPay(AutoUs):
         # =============================================== #
     """
     id = 0
+
     def __init__(self, data=None, usPipe=None, noWin=False, noImg=False):
         self.all_data = data
         data_one = tuple([data[i][0] for i in range(1, 4)])
@@ -28,26 +29,32 @@ class AutoPay(AutoUs):
 
     def register(self):
         register_id_befor = "Registration:SiteTemplate:theForm"
-        self.driver.get("https://cgifederal.secure.force.com/SiteRegister?country=china&language=")
-        self.Wait(xpath=f'//*[@id="{register_id_befor}"]/table/tbody/tr[7]/td/label/input')
+        self.driver.get(
+            "https://cgifederal.secure.force.com/SiteRegister?country=china&language=")
+        self.Wait(
+            xpath=f'//*[@id="{register_id_befor}"]/table/tbody/tr[7]/td/label/input')
         sleep(0.5)
         # self.Wait(f"{register_id_befor}:username", "ming62401suan@163.com")
         # self.Wait(f"{register_id_befor}:firstname", "xiaofang")
         # self.Wait(f"{register_id_befor}:lastname", "kang")
         self.Wait(f"{register_id_befor}:username", self.resInfo["home_email"])
-        self.Wait(f"{register_id_befor}:firstname", self.resInfo["english_name_s"])
-        self.Wait(f"{register_id_befor}:lastname", self.resInfo["english_name"])
+        self.Wait(f"{register_id_befor}:firstname",
+                  self.resInfo["english_name_s"])
+        self.Wait(f"{register_id_befor}:lastname",
+                  self.resInfo["english_name"])
         while self.driver != "https://cgifederal.secure.force.com/applicanthome":
             try:
                 result = self.getCaptcha(f"{register_id_befor}:theId")
                 self.Wait(f"{register_id_befor}:password", PASSWD)
                 self.Wait(f"{register_id_befor}:confirmPassword", PASSWD)
-                self.Wait(f"{register_id_befor}:recaptcha_response_field", result)
+                self.Wait(
+                    f"{register_id_befor}:recaptcha_response_field", result)
                 sleep(1)
                 self.Wait(f"{register_id_befor}:submit")
             except:
                 pass
-            if "SiteRegister" not in self.driver.current_url: break
+            if "SiteRegister" not in self.driver.current_url:
+                break
             sleep(2)
         Select(self.Wait(xpath='//select', text=NC)).select_by_index(1)
         self.usPipe.uploadOrder(self.res["id"], register_is=1)
@@ -60,20 +67,25 @@ class AutoPay(AutoUs):
         # 输入用户名密码
         print("输入用户名密码")
         # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", "janice.fu@lettours.com")
-        self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", self.email)
+        self.Wait(
+            "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:username", self.email)
         sleep(1)
         # 点击同意条款
         print("点击同意条款")
-        self.Wait(xpath='//*[@id="loginPage:SiteTemplate:siteLogin:loginComponent:loginForm"]/div[2]/div[2]/table/tbody/tr[3]/td/label/input')
+        self.Wait(
+            xpath='//*[@id="loginPage:SiteTemplate:siteLogin:loginComponent:loginForm"]/div[2]/div[2]/table/tbody/tr[3]/td/label/input')
         # 验证码识别
         print("验证码识别")
         for _ in range(5):
             try:
                 # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", "janice522")
-                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
-                result = self.getCaptcha( "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
+                self.Wait(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
+                result = self.getCaptcha(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
                 result = result.replace("1", "l")
-                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
+                self.Wait(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
                 sleep(0.5)
                 # 点击登陆
                 print("点击登陆")
@@ -82,9 +94,11 @@ class AutoPay(AutoUs):
                 if "无法核实验证码。请重新输入。" in self.driver.page_source:
                     continue
                 elif "确保用户名和密码正确" in self.driver.page_source:
-                    self.usPipe.upload(aid=self.resPublic["aid"], ques="邮箱用户名或密码不正确", interview_status="0")
+                    self.usPipe.upload(
+                        aid=self.resPublic["aid"], ques="邮箱用户名或密码不正确", interview_status="0")
                     return 1
-                else: break
+                else:
+                    break
                 sleep(0.1)
             except:
                 pass
@@ -95,7 +109,8 @@ class AutoPay(AutoUs):
     def payInfo(self):
         """ 付款页面 """
         if self.driver.current_url != "https://cgifederal.secure.force.com/applicanthome":
-            if self.login(): return 1
+            if self.login():
+                return 1
         xp = '//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "新的签证申请")]'
         self.Wait(xpath=xp)
         self.Wait("j_id0:SiteTemplate:theForm:ttip:2")
@@ -146,7 +161,8 @@ class AutoPay(AutoUs):
         try:
             self.Wait("AcceptButton")
             self.Wait(xpath='//select', text=NC)
-            Select(self.driver.find_element_by_xpath('//select')).select_by_index(1)
+            Select(self.driver.find_element_by_xpath(
+                '//select')).select_by_index(1)
         except:
             pass
 
@@ -191,8 +207,10 @@ class AutoPay(AutoUs):
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id807", name)
         # 性别
         print("性别")
-        gender = Select(self.driver.find_element_by_id("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1093"))
-        gender.select_by_value("Male" if self.resInfo["sex"] == "M" else "Female")
+        gender = Select(self.driver.find_element_by_id(
+            "thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1093"))
+        gender.select_by_value(
+            "Male" if self.resInfo["sex"] == "M" else "Female")
 
         # AAcode
         # self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1107", "AA008BHNQC")
@@ -226,11 +244,12 @@ class AutoPay(AutoUs):
             city = zhInfo["mailing_address_city"]
             province = zhInfo["mailing_address_province"]
             zipCode = zhInfo["mailing_address_zip"]
-        self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1168", live_address)
+        self.Wait(
+            "thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1168", live_address)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1175", city)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1182", province)
         self.Wait("thePage:SiteTemplate:theForm:j_id182:j_id183:j_id1189", zipCode)
-        
+
         self.driver.save_screenshot("usFile/table.png")
         table = self.driver.find_element("id", "profileTab")
         left, top = table.location['x'], table.location['y']
@@ -242,7 +261,8 @@ class AutoPay(AutoUs):
         self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm"]/input[3]')
         try:
             sleep(3)
-            err = self.driver.find_element_by_css_selector('body > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-resizable').text
+            err = self.driver.find_element_by_css_selector(
+                'body > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-resizable').text
             # if self.res["exist_status"] == 2:
             #     self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
             #     self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm"]/input[3]')
@@ -250,10 +270,11 @@ class AutoPay(AutoUs):
             #     text = self.driver.find_element('xpath', '//*[@id="j_id0:SiteTemplate:j_id113:j_id114"]/div/div/strong').text
             #     textlist = f"警告:{text}"
             #     self.usPipe.uploadOrder(self.res['id'], interview_img=textlist)
-            #     return 
+            #     return
             # else:
-            err = '|'.join(err.replace("\nclose","").split("\n")[:3])
-            self.usPipe.uploadOrder(self.res["id"], exist_email=err, exist_status=1, interview_status=0)
+            err = '|'.join(err.replace("\nclose", "").split("\n")[:3])
+            self.usPipe.uploadOrder(
+                self.res["id"], exist_email=err, exist_status=1, interview_status=0)
             return 0
         except:
             pass
@@ -263,8 +284,6 @@ class AutoPay(AutoUs):
         url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
         res = requests.post(url, files=files).json()
         self.usPipe.uploadOrder(self.res['id'], interview_img=res)
-
-        
 
         if self.resPublic["associate_is"] == "Y" and self.resPublic["associate_tuxedo_is"] == "N":
             relDic = {
@@ -352,12 +371,14 @@ class AutoPay(AutoUs):
                     tx = self.driver.find_element(
                         "xpath", f'//*[@id="addresses"]/tbody/tr[{i+1}]/td[2]/strong').text
                     if tx.strip() == zx["address"].strip():
-                        self.Wait(xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
+                        self.Wait(
+                            xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
                         break
                 self.Wait(
                     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
             except:
-                self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
+                self.Wait(
+                    xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
         elif zx["status"] == "N":
             self.Wait("thePage:SiteTemplate:theForm:j_id172:1")
             self.Wait(
@@ -378,7 +399,8 @@ class AutoPay(AutoUs):
         if ' USD 160 ' in self.driver.page_source:
             self.usPipe.uploadOrder(self.res["id"], interview_status=2)
             return
-        self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id118"]/table/tbody/tr[2]/td[1]/a')
+        self.Wait(
+            xpath='//*[@id="j_id0:SiteTemplate:j_id118"]/table/tbody/tr[2]/td[1]/a')
         while True:
             code = self.driver.find_element("id", "referenceCell").text
             if code:
@@ -401,12 +423,14 @@ class AutoPay(AutoUs):
 
         sleep(2)
         try:
-            self.driver.find_element_by_xpath('//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input').click()
+            self.driver.find_element_by_xpath(
+                '//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input').click()
             sleep(2)
         except:
             pass
         try:
-            self.driver.find_element_by_xpath('/html/body/div[2]/div[3]/div/button/span').click()
+            self.driver.find_element_by_xpath(
+                '/html/body/div[2]/div[3]/div/button/span').click()
         except:
             pass
         if jx:
@@ -453,23 +477,28 @@ class AutoPay(AutoUs):
             d = f'{userDate["day"].split("-")[0]:0>2}'
             mo = f'{userDate["day"].split("-")[1]:0>2}'
             try:
-                Select(self.driver.find_element_by_xpath('//select')).select_by_index(1)
+                Select(self.driver.find_element_by_xpath(
+                    '//select')).select_by_index(1)
             except:
                 pass
             while 1:
                 try:
-                    self.Wait(xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
+                    self.Wait(
+                        xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
                     break
                 except:
                     self.Wait(xpath='//*[@id="datepicker"]/div/div[3]/div/a')
 
-            divs = self.driver.find_elements_by_css_selector('#datepicker > div > div.ui-datepicker-group')
+            divs = self.driver.find_elements_by_css_selector(
+                '#datepicker > div > div.ui-datepicker-group')
             for div in divs:
                 if div.find_element_by_xpath('./div/div/span').text == MON[mo]:
-                    div.find_element_by_xpath(f".//a[contains(text(), {int(d)})]").click()
+                    div.find_element_by_xpath(
+                        f".//a[contains(text(), {int(d)})]").click()
                     break
 
-            self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
+            self.Wait(
+                xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
             reg = r'<td>(\d\d:\d\d)</td>'
             times = re.findall(reg, self.driver.page_source)
             if userDate["t"] in times:
@@ -483,21 +512,25 @@ class AutoPay(AutoUs):
                 self.Wait(
                     xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
                 with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
-                    file = {"file": ("AppointmentConfirmation.pdf", f.read(), "application/pdf")}
+                    file = {"file": ("AppointmentConfirmation.pdf",
+                                     f.read(), "application/pdf")}
                 url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
                 res = requests.post(url, files=file).json()
                 success_time = f"{'-'.join([userDate['day'].split('-')][::-1])} {s_time}"
                 # 存入数据库
-                self.usPipe.uploadOrder(ids=self.res["id"],interview_success=success_time, interview_status="6", interview_pdf=res, interview_num=self.res["interview_num"]-1)
+                self.usPipe.uploadOrder(ids=self.res["id"], interview_success=success_time,
+                                        interview_status="6", interview_pdf=res, interview_num=self.res["interview_num"]-1)
                 print("预约成功")
                 return
         self.getDates(error=True)
         self.usPipe.uploadOrder(self.res["id"], interview_status='5')
 
     def cancel(self):
-        if self.login(): return 1
+        if self.login():
+            return 1
         self.Wait(xpath='//a[contains(text(),"取消预约")]')
-        self.Wait(xpath='//*[@id="j_id0:SiteTemplate:j_id120"]/table/tbody/tr[14]/td/input[1]')
+        self.Wait(
+            xpath='//*[@id="j_id0:SiteTemplate:j_id120"]/table/tbody/tr[14]/td/input[1]')
         print("取消成功")
 
     # 新增
@@ -506,16 +539,21 @@ class AutoPay(AutoUs):
         if self.group_email_info["status"] == 1:
             self.email = self.group_email_info["email"]
             pwd = self.group_email_info["password"]
-        if self.login(pwd): return 1
+        if self.login(pwd):
+            return 1
         return 0
 
     # 查询预约付款号
     def groupAppointment(self):
-        if self.groupLogin(): return 1
-        self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
+        if self.groupLogin():
+            return 1
+        self.Wait(
+            css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
         # 中间操作
         self.middle()
-        self.add_user()
+        if self.add_user():
+            self.selApp()
+            self.middle()
         self.mail()
         self.receipt()
         self.driver.quit()
@@ -526,7 +564,6 @@ class AutoPay(AutoUs):
         for _ in range(len(lis)):
             self.Wait(css=".ui-icon-close:nth-child(1)")
             self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
-        
 
         for i in range(len(self.all_data[2])):
             pub = self.all_data[1][i]
@@ -539,25 +576,32 @@ class AutoPay(AutoUs):
                 # else:
                 #     self.add_old_user(user)
                 if self.add_old_user(user):
-                    self.add_new_user(user)
+                    if self.add_new_user(user):
+                        return 1
             except:
-                self.add_new_user(user)
+                if self.add_new_user(user):
+                    return 1
 
             sleep(3)
         # 截图
         self.pay_user_img()
         # 下一步
-        self.driver.find_element_by_css_selector("input[type='button']").click()
+        self.driver.find_element_by_css_selector(
+            "input[type='button']").click()
 
     def add_new_user(self, user):
         resPublic, resInfo, _ = user
         self.Wait(css='#create-user > span')
         self.Wait(css="select.formRelationship", text="Other")
         self.Wait(css=".requiredInput > .formDs160", text=resPublic["aacode"])
-        self.Wait(css=".requiredInput > .formNationalId", text=resInfo["identity_number"])
-        self.Wait(css="span >.requiredInput > .requiredInput > .formFirstName", text=resInfo["english_name_s"])
-        self.Wait(css=".requiredInput > .formLastName", text=resInfo["english_name"])
-        gender = Select(self.driver.find_element("css selector", ".requiredInput > select.formGender"))
+        self.Wait(css=".requiredInput > .formNationalId",
+                  text=resInfo["identity_number"])
+        self.Wait(css="span >.requiredInput > .requiredInput > .formFirstName",
+                  text=resInfo["english_name_s"])
+        self.Wait(css=".requiredInput > .formLastName",
+                  text=resInfo["english_name"])
+        gender = Select(self.driver.find_element(
+            "css selector", ".requiredInput > select.formGender"))
         gender.select_by_value("Male" if resInfo["sex"] == "M" else "Female")
         year, month, day = resInfo["date_of_birth"].split("-")
         self.Wait(css="#datepicker > input", text=f"{month}/{day}/{year}")
@@ -565,32 +609,48 @@ class AutoPay(AutoUs):
         self.Wait(css='.requiredInput > .formCountryOfBirth', text=country)
         self.Wait(css='.requiredInput > span > select', text=country)
         self.Wait(css='#issuancePlace > span > .formNationality', text=country)
-        self.Wait(css='.requiredInput > .formPassport', text=resInfo["passport_number"])
+        self.Wait(css='.requiredInput > .formPassport',
+                  text=resInfo["passport_number"])
         year, month, day = resInfo["lssue_date"].split("-")
-        self.Wait(css='.requiredInput > div > .formPassportDate', text=f"{month}/{day}/{year}")
+        self.Wait(css='.requiredInput > div > .formPassportDate',
+                  text=f"{month}/{day}/{year}")
         year, month, day = resInfo["expiration_date"].split("-")
-        self.Wait(css='.requiredInput > div > .formPassportExpirationDate', text=f"{month}/{day}/{year}")
-        self.Wait(css='.requiredInput > .formMobilePhone', text='+86' + resInfo["home_telphone"])
-        standby_phone = resInfo["tel"] if resInfo["tel"] else resInfo["company_phone"] if resInfo["company_phone"] else resInfo["home_telphone"]
-        self.Wait(css='.requiredInput > .formPhone', text='+86' + standby_phone)
+        self.Wait(css='.requiredInput > div > .formPassportExpirationDate',
+                  text=f"{month}/{day}/{year}")
+        self.Wait(css='.requiredInput > .formMobilePhone',
+                  text='+86' + resInfo["home_telphone"])
+        standby_phone = resInfo["tel"] if resInfo["tel"] else resInfo[
+            "company_phone"] if resInfo["company_phone"] else resInfo["home_telphone"]
+        self.Wait(css='.requiredInput > .formPhone',
+                  text='+86' + standby_phone)
         self.Wait(css='.requiredInput > .formEmail', text=self.email)
         # 确认
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
-        sleep(1)
-        
+        try:
+            wait = WebDriverWait(self.driver, 3, 0.2, "添加新用户失败")
+            locator = ("css selector", "form >ul > li")
+            if wait.until(EC.presence_of_element_located(locator)).text == "Applicant already has an appointment.":
+                self.Wait(xpath="/html/body/div[3]/div[1]/a/span")
+                return 1
+        except:
+            pass
+
     def add_old_user(self, user):
         self.Wait(css="#create-addApplicants > span")
         self.Wait(xpath='//div[@id="dialog-formAddExisting"]//table')
         eng_names = f'{user[1]["english_name_s"]} {user[1]["english_name"]}'
-        divs = self.driver.find_elements_by_xpath(f'//div[@id="dialog-formAddExisting"]//div')
+        divs = self.driver.find_elements_by_xpath(
+            f'//div[@id="dialog-formAddExisting"]//div')
         div = [i for i in divs if i.text.strip() == eng_names]
         if not div:
+            self.Wait(xpath='/html/body/div[6]/div[1]/a/span')
             return 1
         div = div[0]
         div.find_element_by_css_selector("input").click()
-        self.driver.find_element_by_xpath('/html/body/div[6]/div[3]/div/button[1]/span').click()
+        self.driver.find_element_by_xpath(
+            '/html/body/div[6]/div[3]/div/button[1]/span').click()
         self.Wait(xpath='//*[@id="summary"]/ul/li[1]/div[2]/span')
-        self.Wait(css=".requiredInput > .formDs160", text=user[0]["aacode"])   
+        self.Wait(css=".requiredInput > .formDs160", text=user[0]["aacode"])
         self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
         return 0
 
@@ -619,13 +679,15 @@ class AutoPay(AutoUs):
 
     # 中间操作
     def middle(self):
-        radio = self.Wait(css='table > tbody > tr:nth-child(2) > td > input', text=NC)
+        radio = self.Wait(
+            css='table > tbody > tr:nth-child(2) > td > input', text=NC)
         if not radio.is_selected():
             radio.click()
             self.Wait(xpath='/html/body/div[3]/div[3]/div/button/span')
         self.Wait(css='input.continue')
-        lq = {"BEJ": 1, "CHE": 2, "GUZ": 3, "SHG": 4, "SNY": 5,}
-        self.Wait(css=f"table > tbody > tr:nth-child({lq[self.resInfo['activity']]}) > td > input")
+        lq = {"BEJ": 1, "CHE": 2, "GUZ": 3, "SHG": 4, "SNY": 5, }
+        self.Wait(
+            css=f"table > tbody > tr:nth-child({lq[self.resInfo['activity']]}) > td > input")
         self.Wait(css='input.continue')
         purpose = json.loads(self.resPublic["america_purpose"])[0]
         if self.resInfo["activity"] in ["BEJ", "GUZ", "SHG", "SNY"]:
@@ -668,12 +730,14 @@ class AutoPay(AutoUs):
                     tx = self.driver.find_element(
                         "xpath", f'//*[@id="addresses"]/tbody/tr[{i+1}]/td[2]/strong').text
                     if tx.strip() == zx["address"].strip():
-                        self.Wait(xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
+                        self.Wait(
+                            xpath=f'//*[@id="addresses"]/tbody/tr[{i+1}]/td/input')
                         break
                 # self.Wait(
                 #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
             except:
-                self.Wait(xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
+                self.Wait(
+                    xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[6]/td[2]/input')
         elif zx["status"] == "N":
             self.Wait("thePage:SiteTemplate:theForm:j_id172:1")
             self.Wait(
@@ -688,10 +752,18 @@ class AutoPay(AutoUs):
             #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
 
         # self.Wait(xpath='//table[1]/tbody/tr[6]/td[2]/input')
-        self.Wait(css="tr > td:last-child > input[type='submit']")
         # 付款
         # print("付款")
-        # self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+        try:
+            self.Wait(css="tr > td:last-child > input[type='submit']")
+        except:
+            self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+        sleep(1)
+        try:
+            self.Wait(xpath='/html/body/div[4]/div[3]/div/button[1]/span')
+        except:
+            pass
+                
 
     # 付款填写收据 | 返回付款编号
     def receipt(self, code=''):
@@ -705,17 +777,22 @@ class AutoPay(AutoUs):
             self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
             self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
             self.Wait(css='#referenceCell', text=NC)
-            code =  self.driver.find_element_by_css_selector('#referenceCell').text
+            code = self.driver.find_element_by_css_selector(
+                '#referenceCell').text
             if code:
-                self.usPipe.uploadOrder(self.res["id"], interview_status=2, pay_code=code)
+                self.usPipe.uploadOrder(
+                    self.res["id"], interview_status=2, pay_code=code)
                 return code
             else:
                 print('没有付款编号')
 
     # 预约查询
     def selApp(self, cancel=False):
+        if self.history():
+            return 1
         # self.driver.get("https://cgifederal.secure.force.com/ApplicantHome")
-        self.Wait(css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(2) > a')
+        self.Wait(
+            css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(2) > a')
         trs = self.driver.find_elements_by_xpath('//table[1]//tr')[1:]
         for i in range(len(self.all_data[2])):
             info = self.all_data[2][i]
@@ -728,47 +805,87 @@ class AutoPay(AutoUs):
                     elif cancel:
                         tr.find_element_by_xpath(".//li//ul/li[5]/a").click()
                         if cancel == 3:
-                            times = self.driver.find_element_by_xpath('//table[@role="presentation"]').text.split('\n')
+                            times = self.driver.find_element_by_xpath(
+                                '//table[@role="presentation"]').text.split('\n')
                             date_times = {}
                             for time in times:
                                 date = time.split(' ')
                                 day = f"{int(date[3].strip(','))}-{MON_ANTI[date[2]]}-{date[4]}"
                                 ti = date[0]
-                                if not date_times.get(day): date_times[day] = [ti]
-                                else: date_times[day].append(ti)
-                            dates = '|'.join([f"{i}&{','.join(date_times[i])}" for i in date_times])
-                            self.usPipe.uploadDays(info["activity"], replace_interview_days=dates)
+                                if not date_times.get(day):
+                                    date_times[day] = [ti]
+                                else:
+                                    date_times[day].append(ti)
+                            dates = '|'.join(
+                                [f"{i}&{','.join(date_times[i])}" for i in date_times])
+                            self.usPipe.uploadDays(
+                                info["activity"], replace_interview_days=dates)
 
                         elif cancel == 2 and self.res["interview_time"]:
                             userDate = json.loads(self.res["interview_time"])
                             userDateDay = userDate["day"].split('-')
                             userDateDay[1] = f"{userDateDay[1]:0>2}"
                             date = f'{MON[userDateDay[1]]} {userDateDay[0]}, {userDateDay[2]}'
-                            tds = self.driver.find_elements_by_xpath('//table[@role="presentation"]//td')
-                            [td.find_element_by_xpath("./input").click for td in tds if date and userDate["t"] in td.find_element_by_xpath("./lable").text]
-                            self.driver.find_element_by_xpath('/html/body/div[3]/div[3]/div/button[1]/span').click()
+                            tds = self.driver.find_elements_by_xpath(
+                                '//table[@role="presentation"]//td')
+                            [td.find_element_by_xpath(
+                                "./input").click for td in tds if date and userDate["t"] in td.find_element_by_xpath("./lable").text]
+                            self.driver.find_element_by_xpath(
+                                '/html/body/div[3]/div[3]/div/button[1]/span').click()
 
                     tds = tr.text.split("\n")
                     _, month, day, year = tds[0].split(' ')
                     success_time = f"{year}-{MON_ANTI[month]}-{day} {tds[1]}"
-                    self.usPipe.uploadOrder(self.res["id"], interview_status=6, python_status=0, interview_success=success_time)
+                    self.usPipe.uploadOrder(
+                        self.res["id"], interview_status=6, python_status=0, interview_success=success_time)
                     return 1
 
         if cancel == 1:
-            self.usPipe.uploadOrder(self.res["id"], interview_status=9, replace=0, interview_success=None)
+            self.usPipe.uploadOrder(
+                self.res["id"], interview_status=9, replace=0, interview_success=None)
             return 1
-        self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)', text=f'{self.resInfo["english_name_s"]} {self.resInfo["english_name"]}')
-        self.Wait(css='#dashboard > span > form > input[type="submit"]:nth-child(3)')
+        self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)',
+                  text=f'{self.resInfo["english_name_s"]} {self.resInfo["english_name"]}')
+        self.Wait(
+            css='#dashboard > span > form > input[type="submit"]:nth-child(3)')
         self.Wait(xpath='//table[1]', text=NC)
         try:
-            self.driver.find_element_by_css_selector('table > tbody > tr > td:nth-child(2) > span > a')
+            self.driver.find_element_by_css_selector(
+                'table > tbody > tr > td:nth-child(2) > span > a').click()
         except:
-            self.driver.find_element_by_css_selector('#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
+            self.driver.find_element_by_css_selector(
+                '#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a').click()
+
+    def history(self):
+        history_element = self.Wait(css="#ctl00_nav_side1 > ul > li:nth-child(3) > a", text=NC)
+        # self.Wait(css="#ctl00_nav_side1 > ul > li:nth-child(3) > a")
+        print(history_element.text)
+        if history_element.text != "预约历史":
+            return
+        history_element.click()
+        for i in range(len(self.all_data[2])):
+            info = self.all_data[2][i]
+            self.Wait(
+                css='input[type="text"]', text=f'{info["english_name_s"]} {info["english_name"]}')
+            sleep(1)
+            trs = self.driver.find_elements_by_css_selector(
+                "#appointmentHistoryTable > tbody > tr")
+            for tr in trs:
+                status = tr.find_element_by_css_selector("td:last-child").text
+                if "Scheduled" == status:
+                    _, month, day, year, time = tr.find_element_by_css_selector(
+                        "td:nth-child(2)").text.split(' ')
+                    success_time = f"{year}-{MON_ANTI[month]}-{day.strip(',')} {time}"
+                    self.usPipe.uploadOrder(
+                        self.res["id"], interview_status="6", interview_success=success_time, python_status=0)
+                    return 1
+        return 0
 
     # 开始预约
     def group_pay_over(self):
         self.groupLogin()
-        if self.selApp(self.res["replace"]): return
+        if self.selApp(self.res["replace"]):
+            return
         self.middle()
         self.add_user()
         # self.Wait(css="input[type='button']")
@@ -781,57 +898,37 @@ class AutoPay(AutoUs):
         month_no = 0
         month = dates[0].split('-')[1]
         if self.res["python_status"] == 1 or error:
-            ViewState = self.driver.find_element_by_css_selector("input[name='com.salesforce.visualforce.ViewState']").get_attribute("value")
-            ViewStateVersion = self.driver.find_element_by_css_selector("input[name='com.salesforce.visualforce.ViewStateVersion']").get_attribute("value")
-            ViewStateMAC = self.driver.find_element_by_css_selector("input[name='com.salesforce.visualforce.ViewStateMAC']").get_attribute("value")
-            ViewStateCSRF = self.driver.find_element_by_css_selector("input[name='com.salesforce.visualforce.ViewStateCSRF']").get_attribute("value")
-
-            cookie_list = self.driver.get_cookies()
-            cookies = ";".join([item["name"] + "=" + item["value"] + "" for item in cookie_list])
-            head = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36",
-                "Cookie": cookies
-            }
-
-            post_data = {
-                "AJAXREQUEST": "_viewRoot",
-                "thePage:SiteTemplate:theForm": "thePage:SiteTemplate:theForm",
-                "com.salesforce.visualforce.ViewState": ViewState,
-                "com.salesforce.visualforce.ViewStateVersion": ViewStateVersion,
-                "com.salesforce.visualforce.ViewStateMAC": ViewStateMAC,
-                "com.salesforce.visualforce.ViewStateCSRF": ViewStateCSRF,
-                "thePage:SiteTemplate:theForm:j_id171": "thePage:SiteTemplate:theForm:j_id171",
-            }
-
-            url = 'https://cgifederal.secure.force.com/scheduleappointment'
-            
             reg = r'<td>(\d\d:\d\d)</td>'
-            times = re.findall(reg, self.driver.page_source)
-            appointment_dates = {
-                dates[0]: ','.join(times)
-            }
-            for date in dates[1:]:
-                if month_no == self.group_email_info["month"]: break 
-                if month != date.split('-')[1]: month_no += 1
-                post_data["selectedDate"] = "{1}/{0}/{2}".format(*date.split('-'))
-                res = requests.post(url, data=post_data, headers=head)
-                reg = r'<td>(\d\d:\d\d)</td>'
-                times = re.findall(reg, res.text)
-                appointment_dates[date] = ','.join(times)
-                reg = r'<input type="hidden" id="com.salesforce.visualforce.ViewState" name="com.salesforce.visualforce.ViewState" value="(.*?)" /><input type="hidden" id="com.salesforce.visualforce.ViewStateVersion" name="com.salesforce.visualforce.ViewStateVersion" value="(.*?)" /><input type="hidden" id="com.salesforce.visualforce.ViewStateMAC" name="com.salesforce.visualforce.ViewStateMAC" value="(.*?)" /><input type="hidden" id="com.salesforce.visualforce.ViewStateCSRF" name="com.salesforce.visualforce.ViewStateCSRF" value="(.*?)" />'
-                datas = re.findall(reg, res.text)[0]
-                post_data["com.salesforce.visualforce.ViewState"] = datas[0]
-                post_data["com.salesforce.visualforce.ViewStateVersion"] = datas[1]
-                post_data["com.salesforce.visualforce.ViewStateMAC"] = datas[2]
-                post_data["com.salesforce.visualforce.ViewStateCSRF"] = datas[3]
-            # 返回可预约日期
-            dates = '|'.join([f"{i}&{appointment_dates[i]}" for i in appointment_dates])
-            self.usPipe.uploadDays(self.resInfo["activity"], interview_days=dates)
+            # times = re.findall(reg, self.driver.page_source)
+            # appointment_dates = {
+            #     dates[0]: ','.join(times)
+            # }
+            appointment_dates = {}
+            elements = self.driver.find_elements_by_css_selector("td > a.ui-state-default")
+            for index in range(len(elements)):
+                try:
+                    d, m, y = dates[index].split("-")
+                    elements[index].click()
+                    self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[m]} {int(d)}")]', text=NC)
+                    times = re.findall(reg, self.driver.page_source)
+                    appointment_dates[dates[index]] = ','.join(times)
+                    elements = self.driver.find_elements_by_css_selector("td > a.ui-state-default")
+                except Exception as e:
+                    print(e)
+                    continue
+
+            dates = '|'.join(
+                [f"{i}&{appointment_dates[i]}" for i in appointment_dates])
+            self.usPipe.uploadDays(
+                self.resInfo["activity"], interview_days=dates)
             self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return dates
 
     def AppLast(self):
-        self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+        try:
+            self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
+        except:
+            pass
         self.Wait(xpath='//*[@id="mainContent"]/div/form/div/input[2]')
         sleep(1)
         dates = self.getDates()

@@ -326,8 +326,7 @@ class AutoUs(Base):
         else:
             try: 
                 self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_pnlSubmittedApp", text=NC)
-                self.errJson(["已出签"], "该信息已出签")
-                self.usPipe.upload(aid=self.resPublic["aid"], status="4")
+                self.usPipe.upload(self.resPublic["aid"], status="4")
                 return 1
             except:
                 pass
@@ -594,7 +593,6 @@ class AllPage(AutoUs):
 
     def personal1(self):
         """ 填写个人信息页一 (Personal1) """
-        self.progress("0% 开始审核信息")
         print("填写个人信息页一 (Personal1)")
         # 拼音姓 拼音名 中文姓名
         ids = [
