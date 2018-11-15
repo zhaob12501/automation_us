@@ -103,7 +103,7 @@ class UsRun:
                 # =======
                 print('有数据进行提交\n')
                 self.au = AllPage(data=self.auto.data,
-                                  noWin=True, usPipe=UsPipeline(self.pool))
+                                  noWin=False, usPipe=UsPipeline(self.pool))
                 # self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
                 try:
                     self.control[self.au.resPublic["visa_status"]]()

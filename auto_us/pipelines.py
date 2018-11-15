@@ -62,7 +62,7 @@ class Mysql(object):
         if count > 0:
             result = self._cursor.fetchall()
         else:
-            result = False
+            result = []
         self._cursor.close()
         return result
 
@@ -192,11 +192,10 @@ class Mysql(object):
         self._conn.close()
 
 
-class UsPipeline:
-    def __init__(self, pool=None):
-        if pool:
-            self.con = pool.connection()
-            self.cur = self.con.cursor()
+class UsPipeline(Mysql):
+    def __init__(self, *args):
+        self.con = self._conn = super()._Mysql__getConn()
+        self.cur = self.con.cursor()
 
     def selZh(self, aid=None):
         sql = f"SELECT * FROM dc_business_america_info WHERE aid = {aid}"
@@ -273,7 +272,7 @@ class UsPipeline:
         sql = "SELECT * FROM dc_business_america_order WHERE interview_status=4 or python_status=1"
         sql = sql if not usql else usql
         # 测试
-        sql = "SELECT * FROM dc_business_america_order WHERE id=64"
+        # sql = "SELECT * FROM dc_business_america_order WHERE id=64"
         self.cur.execute(sql)
         res = self.cur.fetchone()
         if res:
@@ -347,11 +346,14 @@ class UsPipeline:
                 self.cur.close()
             if self.con:
                 self.con.close()
+            
         except:
             pass
 
 
 if __name__ == "__main__":
-    pass
-    # u = UsPipeline()
+    # pass
+    u = UsPipeline()
+    print(u)
+    print(u)
     # u.upload('123', name="bob", xx="daf", asd="adsdf")
