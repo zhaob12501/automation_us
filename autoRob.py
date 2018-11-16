@@ -38,7 +38,8 @@ def appointment(name):
             oid = app_datas.get(timeout=1)
             sql = "SELECT * FROM dc_business_america_order WHERE id=%s AND interview_status=7"
             order = usPipe.getOne(sql, oid)
-            if not order: continue
+            if not order:
+                continue
             sql = "SELECT * FROM dc_business_america_public_eng WHERE order_id=%s"
             publics = usPipe.getAll(sql, order["id"])
             if not publics:
@@ -52,22 +53,27 @@ def appointment(name):
                 works.append(usPipe.getOne(sql, i["aid"]))
             print(f"{name} - remove {oid}")
 
-            autoPay = AutoPay(data=[order, publics, infos, works], usPipe=usPipe, noWin=False)
+            autoPay = AutoPay(
+                data=[order, publics, infos, works], usPipe=usPipe, noWin=False)
             if autoPay.group_pay_over(1):
+                sleep(1)
                 ids.remove(oid)
         else:
-            nowTime = strftime("%Y-%m-%d %H:%M:%S")
-            sleep(5)
-            print(name, nowTime)
+            print(name, "no data")
+            sleep(2)
 
 
 def main():
     producer = Thread(target=get_datas)
+    print("开启主线程")
     producer.start()
-    app_1 = Thread(target=appointment, args=("线程1",))
-    app_1.start()
-    app_2 = Thread(target=appointment, args=("线程2",))
-    app_2.start()
+    lis = ["线程1", "线程2"]
+    threads = []
+    for i in lis:
+        thread = Thread(target=appointment, args=(i,))
+        thread.start()
+        print("开启", i)
+        threads.append(thread)
 
 
 if __name__ == '__main__':
