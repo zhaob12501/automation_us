@@ -1,17 +1,12 @@
 from auto_us import AutoPay, UsPipeline
-from auto_us.settings import POOL, os, sleep, strftime
+from auto_us.settings import os, sleep, strftime
 
 
 class RunPayInfo:
     """ 填写付款信息 """
 
     def __init__(self):
-        self.pool = POOL()
         self.data = None
-
-    def __del__(self):
-        del self.usPipe
-        self.pool.close()
 
     def register(self):
         self.usPay.register()
@@ -19,11 +14,8 @@ class RunPayInfo:
     def run(self):
         while True:
             print(f"\n{'#':=<9}#\n# 预约前 #\n{'#':=<9}#")
-            try:
-                self.usPipe = UsPipeline(self.pool)
-            except:
-                print('数据库连接超时...重连...')
-                continue
+            self.usPipe = UsPipeline()
+
             # print('数据库连接完毕...')
             data = self.usPipe.selAppointment()
             if not data:
@@ -44,7 +36,7 @@ class RunPayInfo:
             # 获取需要申请的人员信息
             self.usPay = AutoPay(
                 data=self.usPipe.order_data, 
-                usPipe=self.usPipe
+                usPipe=self.usPipe, noWin=True
             )
             email_info = self.usPipe.get_group_email(
                 self.usPipe.order_data[0]["mpid"])

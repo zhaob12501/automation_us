@@ -8,7 +8,7 @@
 from time import time
 
 from auto_us import AllPage, UsPipeline
-from auto_us.settings import POOL, UsError, json, os, sleep, strftime, sys
+from auto_us.settings import UsError, json, os, sleep, strftime, sys
 
 st = 0
 
@@ -18,8 +18,6 @@ class UsRun:
     '''
 
     def __init__(self):
-        self.pool = POOL()
-        # self.au = AllPage(noWin=True, usPipe=UsPipeline(self.pool))
         self.control = {
             0: self.con0,
             1: self.con1,
@@ -63,7 +61,6 @@ class UsRun:
         self.sendInfo()
 
     def con1(self):
-        # self.au = AllPage(data=self.auto.data, noWin=True, usPipe=UsPipeline(self.pool))
         if hasattr(self.au, "driver") and '--headless' in self.au.chrome_options._arguments:
             self.au.driver.quit()
             self.au.getDriver(False)
@@ -78,24 +75,16 @@ class UsRun:
 
     @property
     def run(self):
-        pool = POOL()
         # ========
         # 开始执行
         # ========
         while True:
             print(f"\n{'#':=<8}#\n# DS160 #\n{'#':=<8}#")
-            try:
-                self.auto = UsPipeline(pool)
-            except:
-                if self.auto:
-                    del self.auto
-                print('数据库连接超时...重连...')
-                continue
+            self.auto = UsPipeline()
             # print('数据库连接完毕...')
 
             # 获取数据库信息
             data = self.auto.selDBInfo
-            # print(f"data: {data}")
             # 判断是否需要申请
             if data:
                 # =======
@@ -103,8 +92,7 @@ class UsRun:
                 # =======
                 print('有数据进行提交\n')
                 self.au = AllPage(data=self.auto.data,
-                                  noWin=False, usPipe=UsPipeline(self.pool))
-                # self.au.resPublic, self.au.resInfo, self.au.resWork = self.auto.data
+                                  noWin=True, usPipe=self.auto)
                 try:
                     self.control[self.au.resPublic["visa_status"]]()
                 except Exception as e:
@@ -113,30 +101,17 @@ class UsRun:
                         self.au.driver.quit()
                         self.au.getDriver()
 
-                if self.auto:
-                    del self.auto
-
+            self.auto = None
             try:
                 self.au.driver.quit()
             except:
                 pass
 
-            if hasattr(self, "au"):
-                del self.au
+            self.au = None
+
             print('没有数据, 等待中...', strftime('%m/%d %H:%M:%S'))
-            # try:
-            #     self.au.driver.get(self.au.usUrl)
-            # except:
-            #     if hasattr(self.au, 'driver'):
-            #         self.au.driver.quit()
-            #     self.au.getDriver
             sleep(5)
             os.system("cls")
-
-    def __del__(self):
-        if hasattr(self, "pool"):
-            self.pool.close()
-            del self.pool
 
 
 def main():

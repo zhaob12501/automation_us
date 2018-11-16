@@ -40,6 +40,7 @@ def appointment(name):
             order = usPipe.getOne(sql, oid)
             if not order:
                 continue
+            print(name, "有数据提交 order表 id:", oid)
             sql = "SELECT * FROM dc_business_america_public_eng WHERE order_id=%s"
             publics = usPipe.getAll(sql, order["id"])
             if not publics:
@@ -51,16 +52,16 @@ def appointment(name):
                 infos.append(usPipe.getOne(sql, i["aid"]))
                 sql = "SELECT * FROM dc_business_america_work_eng WHERE aid=%s"
                 works.append(usPipe.getOne(sql, i["aid"]))
-            print(f"{name} - remove {oid}")
 
             autoPay = AutoPay(
-                data=[order, publics, infos, works], usPipe=usPipe, noWin=False)
+                data=[order, publics, infos, works], usPipe=usPipe, noWin=True)
             if autoPay.group_pay_over(1):
                 sleep(1)
+                print(f"{name} - remove {oid}")
                 ids.remove(oid)
         else:
-            print(name, "no data")
-            sleep(2)
+            print(f"\n{name} No Datas ...", strftime("%m-%d %H:%M:%S"))
+            sleep(30)
 
 
 def main():

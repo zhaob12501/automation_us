@@ -1,24 +1,19 @@
 from auto_us import AutoPay, UsPipeline
-from auto_us.settings import POOL, os, sleep, strftime
+from auto_us.settings import os, sleep, strftime
 
 
 class RunAppointment:
     """ 预约 """
 
     def __init__(self):
-        self.pool = POOL()
         self.data = None
         self.id = ''
-
-    def __del__(self):
-        del self.usPipe
-        self.pool.close()
 
     def run(self):
         while True:
             print(f"\n{'#':=<7}#\n# 预约 #\n{'#':=<7}#")
             try:
-                self.usPipe = UsPipeline(self.pool)
+                self.usPipe = UsPipeline()
             except:
                 print('数据库连接超时...重连...')
                 continue
@@ -41,7 +36,7 @@ class RunAppointment:
 
             # 获取需要申请的人员信息
             self.usPay = AutoPay(
-                data=self.usPipe.order_data, usPipe=self.usPipe)
+                data=self.usPipe.order_data, usPipe=self.usPipe, noWin=True)
             email_info = self.usPipe.get_group_email(
                 self.usPipe.order_data[0]["mpid"])
             if email_info["status"] != 1:
