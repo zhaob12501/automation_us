@@ -11,6 +11,8 @@ class RunAppointment:
 
     def run(self):
         while True:
+            if hasattr(self, "usPay"):
+                del self.usPay
             print(f"\n{'#':=<7}#\n# 预约 #\n{'#':=<7}#")
             try:
                 self.usPipe = UsPipeline()
@@ -20,8 +22,6 @@ class RunAppointment:
             # print('数据库连接完毕...')
             data = self.usPipe.selDBOrder()
             if not data:
-                if hasattr(self, "usPay"):
-                    del self.usPay
                 print('没有数据, 等待中...', strftime('%m/%d %H:%M:%S'))
                 sleep(5)
                 os.system("cls")                
@@ -36,7 +36,7 @@ class RunAppointment:
 
             # 获取需要申请的人员信息
             self.usPay = AutoPay(
-                data=self.usPipe.order_data, usPipe=self.usPipe, noWin=True)
+                data=self.usPipe.order_data, usPipe=self.usPipe, noWin=False)
             email_info = self.usPipe.get_group_email(
                 self.usPipe.order_data[0]["mpid"])
             if email_info["status"] != 1:

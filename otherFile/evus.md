@@ -42,19 +42,22 @@ btnNext1    下一步「1」         「id」  「a」
 您现在是否拥有其他国籍？
 radio-other_country-0    否  
 radio-other_country-1    是   
-    other_country_citizenship   其他国家公民当前
-    other_country_acquired      你如何从这个国家获得公民/国籍？
+> other_country_citizenship   其他国家公民当前
+> other_country_acquired      你如何从这个国家获得公民/国籍？
+
 您曾经是否拥有其他国籍？
 radio-other_country_past-0    否  
 radio-other_country_past-1    是   
-    other_country_past_citizenship
+> other_country_past_citizenship
+
 您曾经是否拥有其他国家的护照或居民身份证。
 radio-passport_issued-0    否  
 radio-passport_issued-1    是   
-    passport_issued_country         发行国
-    passport_issued_document_type   文档类型
-    passport_issued_document_number 文档编号 （可选）
-    passport_issued_expiration      到期年份（可选）
+
+> passport_issued_country         发行国
+> passport_issued_document_type   文档类型
+> passport_issued_document_number 文档编号 （可选）
+> passport_issued_expiration      到期年份（可选）
 
 btnNext2    下一步「2」         「id」  「a」
 
@@ -73,6 +76,8 @@ btnNext3        下一步「3」
 <input type="hidden" name="_token" value="V4qz5A3UmxKvggT7ti9XJufWVvVc4EE8Vxlyhc83">
 
 _token: V4qz5A3UmxKvggT7ti9XJufWVvVc4EE8Vxlyhc83
+
+
 last_name: 1
 first_name: 1
 birth_date_day: 1

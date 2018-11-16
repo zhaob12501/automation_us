@@ -729,8 +729,9 @@ class AutoPay(AutoUs):
             Select(self.driver.find_element(
                 "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[1]')).select_by_value(zx["city"])
             try:
-                self.Wait(
-                    xpath='//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]', text=NC)
+                wait = WebDriverWait(self.driver, 2, 0.1)
+                locator = ('xpath', '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')
+                wait.until(EC.presence_of_element_located(locator))
                 Select(self.driver.find_element(
                     "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')).select_by_value(zx["area"])
                 sleep(2)
@@ -762,30 +763,20 @@ class AutoPay(AutoUs):
                 xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[4]/td[2]/input', text=zx["mail_code"])
             # self.Wait(
             #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
-
-        # self.Wait(xpath='//table[1]/tbody/tr[6]/td[2]/input')
-        # 付款
-        # print("付款")
-        try:
-            wait = WebDriverWait(self.driver, 2, 0.1)
-            locator = ("css", "tr > td:last-child > input[type='submit']")
-            wait.until(EC.presence_of_element_located(locator)).click()
-        except:
-            self.Wait(xpath='/html/body/div[2]/div[3]/div/button/span')
-        sleep(1)
-        try:
-            wait = WebDriverWait(self.driver, 2, 0.1)
-            locator = ('xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
-            wait.until(EC.presence_of_element_located(locator)).click()
-        except:
-            pass
                 
     # 付款填写收据 | 返回付款编号
     def receipt(self, code=''):
+        try:
+            wait = WebDriverWait(self.driver, 2, 0.1)
+            locator = ("css selector", "tr > td:last-child > input[type='submit']")
+            wait.until(EC.presence_of_element_located(locator)).click()
+        except:
+            pass
+        sleep(1)
         if code:
             print("付款填写收据")
             self.Wait(xpath='/html/body/div[2]/div[1]/a')
-            self.Wait(css='dd> span > input', text=code)
+            self.Wait(css='dd > span > input', text=code)
             self.Wait(css='input.continue')
         else:
             print("返回付款编号")
@@ -795,16 +786,20 @@ class AutoPay(AutoUs):
                 wait.until(EC.presence_of_element_located(locator)).click()
             except:
                 pass
-            self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
-            self.Wait(css='#referenceCell', text=NC)
-            code = self.driver.find_element_by_css_selector(
-                '#referenceCell').text
-            if code:
-                self.usPipe.uploadOrder(
-                    self.res["id"], interview_status=2, pay_code=code)
-                return code
-            else:
-                print('没有付款编号')
+            try:
+                wait = WebDriverWait(self.driver, 2, 0.1)
+                locator = ('xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
+                wait.until(EC.presence_of_element_located(locator)).click()
+            except:
+                self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
+                self.Wait(css='#referenceCell', text=NC)
+                code = self.driver.find_element_by_css_selector(
+                    '#referenceCell').text
+                if code:
+                    self.usPipe.uploadOrder(
+                        self.res["id"], interview_status=2, pay_code=code, python_status=0)
+                    return code
+        return 0
 
     # 预约查询
     def selApp(self, cancel=False):
@@ -910,12 +905,7 @@ class AutoPay(AutoUs):
         self.add_user()
         # self.Wait(css="input[type='button']")
         self.mail()
-        try:
-            wait = WebDriverWait(self.driver, 2, 0.1)
-            locator = ('xpath', '/html/body/div[2]/div[3]/div/button/span')
-            wait.until(EC.presence_of_element_located(locator)).click()
-        except:
-            pass
+        if self.receipt(): return 
         if not rob:
             self.AppLast()
         else:
