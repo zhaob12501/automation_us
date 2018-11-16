@@ -10,7 +10,7 @@ import pymysql
 from DBUtils.PooledDB import PooledDB
 from pymysql.cursors import DictCursor
 
-from .settings import (DBCHAR, DBHOST, DBNAME, DBPORT, DBPWD, DBUSER, POOL,
+from .settings import (DBCHAR, DBHOST, DBNAME, DBPORT, DBPWD, DBUSER,
                        UsError, time)
 
 travel_names = None
@@ -194,8 +194,8 @@ class Mysql(object):
 
 class UsPipeline(Mysql):
     def __init__(self, *args):
-        self.con = self._conn = super()._Mysql__getConn()
-        self.cur = self.con.cursor()
+        super().__init__()
+        self.cur = self._conn.cursor()
 
     def selZh(self, aid=None):
         sql = f"SELECT * FROM dc_business_america_info WHERE aid = {aid}"
@@ -261,10 +261,10 @@ class UsPipeline(Mysql):
         # sys.exit(1)
         try:
             self.cur.execute(sql)
-            self.con.commit()
+            self._conn.commit()
         except Exception as e:
             print('数据库执行出错, 进行回滚...')
-            self.con.rollback()
+            self._conn.rollback()
             raise UsError(f"{e}\n{kwargs.get('ques', 'ques is null')}")
 
     def selDBOrder(self, usql=None):
@@ -311,10 +311,10 @@ class UsPipeline(Mysql):
         sql = f'UPDATE dc_business_america_order SET {cSql} WHERE id = "{ids}"'
         try:
             self.cur.execute(sql)
-            self.con.commit()
+            self._conn.commit()
         except Exception as e:
             print('数据库执行出错, 进行回滚...')
-            self.con.rollback()
+            self._conn.rollback()
             raise UsError(e)
 
     def uploadDays(self, activity, **kwargs):
@@ -329,23 +329,22 @@ class UsPipeline(Mysql):
         sql = f'UPDATE dc_america_interview_days SET {cSql} WHERE activity="{activity}"'
         try:
             self.cur.execute(sql)
-            self.con.commit()
+            self._conn.commit()
         except Exception as e:
             print('数据库执行出错, 进行回滚...')
-            self.con.rollback()
+            self._conn.rollback()
             raise UsError(f"{e}\n{activity}")
 
     def get_group_email(self, mpid):
-        sql = f"SELECT * FROM dc_business_america_email WHERE mpid={mpid}"
-        self.cur.execute(sql)
-        return self.cur.fetchone()
+        sql = "SELECT * FROM dc_business_america_email WHERE mpid=%s"
+        return self.getOne(sql, mpid)
 
     def __del__(self):
         try:
             if self.cur:
                 self.cur.close()
-            if self.con:
-                self.con.close()
+            if self._conn:
+                self._conn.close()
             
         except:
             pass
@@ -354,6 +353,6 @@ class UsPipeline(Mysql):
 if __name__ == "__main__":
     # pass
     u = UsPipeline()
-    print(u)
+    u.uploadDays(250)
     print(u)
     # u.upload('123', name="bob", xx="daf", asd="adsdf")

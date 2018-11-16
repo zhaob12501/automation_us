@@ -26,5 +26,7 @@ db.ini
 settings.py
 .vscode
 text.py
+test.py
 *.txt
 evus/*
+*.gif

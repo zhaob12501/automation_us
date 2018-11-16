@@ -7,7 +7,6 @@ from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
 from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
                        sleep, strftime, time)
 
-
 class AutoPay(AutoUs):
     """ 
         # =============================================== #
@@ -932,14 +931,8 @@ class AutoPay(AutoUs):
     def getDates(self, error=False):
         reg = r"myDayHash\['(.*?)'\] = true;"
         dates = re.findall(reg, self.driver.page_source)
-        month_no = 0
-        month = dates[0].split('-')[1]
         if self.res["python_status"] == 1 or error:
             reg = r'<td>(\d\d:\d\d)</td>'
-            # times = re.findall(reg, self.driver.page_source)
-            # appointment_dates = {
-            #     dates[0]: ','.join(times)
-            # }
             appointment_dates = {}
             elements = self.driver.find_elements_by_css_selector("td > a.ui-state-default")
             for index in range(len(elements)):
@@ -955,10 +948,8 @@ class AutoPay(AutoUs):
                     print(e)
                     continue
 
-            dates = '|'.join(
-                [f"{i}&{appointment_dates[i]}" for i in appointment_dates])
-            self.usPipe.uploadDays(
-                self.resInfo["activity"], interview_days=dates)
+            upload_dates = '|'.join([f"{i}&{appointment_dates[i]}" for i in appointment_dates])
+            self.usPipe.uploadDays(self.resInfo["activity"], interview_days=upload_dates)
             self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return dates
 
@@ -972,7 +963,7 @@ class AutoPay(AutoUs):
             self.appointment(dates)
 
     # def group_cancel(self):
-    #     self.groupLogin()
-    #     self.selApp(True)
+        # self.groupLogin()
+        # self.selApp(True)
 
         
