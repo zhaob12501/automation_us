@@ -559,9 +559,14 @@ class AutoUs(Base):
             pass        
         return 0
 
-    def cos(self, s):
-        """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格 """
-        return re.sub("[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
+    def cos(self, s, no_phone=1):
+        """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格 
+        电话只能为 0-9
+        """
+        if no_phone:
+            return re.sub("[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
+        else:
+            return re.sub("[^0-9]+", "", s)
 
 
 class AllPage(AutoUs):
@@ -809,15 +814,15 @@ class AllPage(AutoUs):
             seList.append((f"{self.baseID}FormView1_ddlMailCountry", self.resInfo['mailing_address_nationality']))
 
         # 主要电话
-        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone'].strip().replace("-", "")))
+        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.cos(self.resInfo['home_telphone'], 0)))
         # 次要电话
         if self.resInfo['tel']:
-            ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel'].replace("-", "")))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.cos(self.resInfo['tel'], 0)))
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_MOBILE_TEL_NA", ""))
         # 工作电话
         if self.resInfo['company_phone']:
-            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone'].strip().replace("-", "")))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.cos(self.resInfo['company_phone'], 0)))
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_BUS_TEL_NA", ""))
 
@@ -998,8 +1003,8 @@ class AllPage(AutoUs):
                 ids.append((f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']))
             ids += [
                 (f"{self.baseID}FormView1_tbxPayerGivenName", self.resPublic['pay_personal_names']),
-                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
-                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic['pay_personal_phone']),
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.cos(self.resPublic['pay_personal_phone'], 0)),
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.cos(self.resPublic['pay_personal_phone'], 0)),
             ]
             if self.resPublic['pay_personal_email']:
                 ids.append((f"{self.baseID}FormView1_tbxPAYER_EMAIL_ADDR", self.resPublic['pay_personal_email']))
@@ -1039,7 +1044,7 @@ class AllPage(AutoUs):
                 # 承担您旅行费用的公司或组织名称
                 (f"{self.baseID}FormView1_tbxPayingCompany", self.cos(self.resPublic["pay_group_name"])),
                 # 电话号码
-                (f"{self.baseID}FormView1_tbxPayerPhone", self.resPublic["pay_group_phone"]),
+                (f"{self.baseID}FormView1_tbxPayerPhone", self.cos(self.resPublic["pay_group_phone"], 0)),
                 # 与您的关系
                 (f"{self.baseID}FormView1_tbxCompanyRelation", self.resPublic["pay_group_relation"]),
                 # 街道地址（第一行）
@@ -1237,7 +1242,7 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_tbxUS_POC_ADDR_LN2", self.resPublic["contact_address"][40:]),
             (f"{self.baseID}FormView1_tbxUS_POC_ADDR_CITY", self.resPublic["contact_city"]),
             (f"{self.baseID}FormView1_tbxUS_POC_ADDR_POSTAL_CD", self.resPublic["contact_zip"]),
-            (f"{self.baseID}FormView1_tbxUS_POC_HOME_TEL", self.resPublic["contact_phone"]),
+            (f"{self.baseID}FormView1_tbxUS_POC_HOME_TEL", self.cos(self.resPublic["contact_phone"], 0)),
 
         ]
 
@@ -1589,7 +1594,7 @@ class AllPage(AutoUs):
             # 城市
             (f"{self.baseID}FormView1_tbxEmpSchCity", self.resWork["company_city"]),
             # 电话号码
-            (f"{self.baseID}FormView1_tbxWORK_EDUC_TEL", self.resWork["company_phone"]),
+            (f"{self.baseID}FormView1_tbxWORK_EDUC_TEL", self.cos(self.resWork["company_phone"], 0)),
             # 所属日期
             (f"{self.baseID}FormView1_ddlEmpDateFromDay", day),
             # 入职年份
@@ -1669,7 +1674,7 @@ class AllPage(AutoUs):
                     # 城市
                     (f"{ferId}tbEmployerCity", work["company_city"]),
                     # 电话
-                    (f"{ferId}tbEmployerPhone", work["company_phone"]),
+                    (f"{ferId}tbEmployerPhone", self.cos(work["company_phone"], 0)),
                     # 职位
                     (f"{ferId}tbJobTitle", work["position"]),
                     # 工作开始时间: 年
