@@ -293,6 +293,7 @@ class UsPipeline(Mysql):
 
     def selAppointment(self):
         sql = f"SELECT * FROM dc_business_america_order WHERE interview_status=1"
+        # 测试
         # sql = f"SELECT * FROM dc_business_america_order WHERE id=59"
         if self.selDBOrder(sql):
             return 1
