@@ -98,7 +98,7 @@ class Base:
         }
         self.chrome_options.add_experimental_option("prefs", profile)
         self.chrome_options.add_argument('--kiosk-printing')
-
+        self.chrome_options.add_argument('user-agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"')
         self.driver = webdriver.Chrome(
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
@@ -122,7 +122,7 @@ class Base:
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
 
     # 获取验证码
-    def getCaptcha(self, id=''):
+    def getCaptcha(self, id='', element=None, a=0):
         """ 验证码识别
             根据页面验证码元素位置, 截取验证码图片
             发送验证码识别请求,返回验证码文字
@@ -130,15 +130,18 @@ class Base:
             Returns: result (str)
         """
         print("正在识别验证码...")
-        self.Wait(id, NC)
-
-        captcha = self.driver.find_element_by_id(id)
+        if element:
+            captcha = element
+        else:
+            self.Wait(id, NC)
+            captcha = self.driver.find_element_by_id(id)
+        
         self.driver.save_screenshot('captcha.png')
         captcha_left = captcha.location['x']
         top = 0 if captcha.location['y'] < 1200 else 910
         captcha_top = captcha.location['y'] - top
-        captcha_right = captcha.location['x'] + captcha.size['width']
-        captcha_bottom = captcha.location['y'] + captcha.size['height'] - top
+        captcha_right = captcha.location['x'] + captcha.size['width'] + a
+        captcha_bottom = captcha.location['y'] + captcha.size['height'] - top + a
         img = Image.open('captcha.png')
         img = img.crop((captcha_left, captcha_top,
                         captcha_right, captcha_bottom))
@@ -256,6 +259,27 @@ class AutoUs(Base):
         node = self.driver.current_url.split("node=")[-1]
         return node if "http" not in node and "data:," != node else ""
 
+    # 开始的验证
+    def start_captcha(self):
+        try:
+            wait = WebDriverWait(self.driver, 2, 0.2, "请求超时")
+            wait.until(EC.presence_of_element_located(("id", "clntcap_frame")))
+            
+            self.driver.switch_to.frame(0)
+            for _ in range(10):
+                img = wait.until(EC.presence_of_element_located(("xpath", "//img")))
+                print("开始的验证")
+                res = self.getCaptcha(element=img, a=10)
+                self.driver.find_element("id", "ans").send_keys(res)
+                self.driver.find_element("id", "jar").click()
+                try:
+                    wait.until(EC.presence_of_element_located(("id", f"{self.baseID}ucLocation_ddlLocation")))
+                    break
+                except:
+                    continue
+        except:
+            pass
+
     # 开始一个新的签证
     @property
     def default(self):
@@ -263,9 +287,11 @@ class AutoUs(Base):
         print("开始一个新的签证")
         # 请求首页
         self.driver.get(self.usUrl)
+        self.start_captcha()
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
+        print("选择领区")
         if self.resInfo['activity']:
             self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
         else:
@@ -292,9 +318,11 @@ class AutoUs(Base):
         """ 继续一个旧的签证信息 """
         print("继续一个旧的签证信息")
         self.driver.get(self.usUrl)
+        self.start_captcha()
         # 选择中文简体
         # self.choiceSelect("ctl00_ddlLanguage", "zh-CN")
         # 选择领区
+        print("选择领区")
         if self.resInfo['activity']:
             self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
         else:
@@ -344,6 +372,8 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Phone Number accepts only numbers (0-9).": "电话只能为数字 0-9",
+            "Primary Phone Number accepts only numbers (0-9).": "主要电话只能为数字 0-9",
             "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
             "Primary Phone Number has not been completed.": "主要电话未填",
             "Alias matches Given Name.": "曾用名有误",
@@ -472,13 +502,13 @@ class AutoUs(Base):
             ls.append(self.errDict.get(i, i))
         # err = json.dumps(ls).replace('\\', '\\\\')
         err = '|'.join(ls)
-        # self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        if self.resPublic["conditions"] == 1:
-            self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
-        elif self.resPublic["conditions"] < 1:
-            self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
-        elif self.resPublic["conditions"] > 1:
-            self.usPipe.upload(self.resPublic['aid'], conditions=0)
+        self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
+        # if self.resPublic["conditions"] == 0:
+        #     self.usPipe.upload(self.resPublic['aid'], status="6", ques=err)
+        # elif self.resPublic["conditions"] < 0:
+        #     self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
+        # elif self.resPublic["conditions"] > 0:
+        #     self.usPipe.upload(self.resPublic['aid'], conditions=0)
     
     # 进度条
     def progress(self, info):
@@ -779,7 +809,7 @@ class AllPage(AutoUs):
             seList.append((f"{self.baseID}FormView1_ddlMailCountry", self.resInfo['mailing_address_nationality']))
 
         # 主要电话
-        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone'].replace("-", "")))
+        ids.append((f"{self.baseID}FormView1_tbxAPP_HOME_TEL", self.resInfo['home_telphone'].strip().replace("-", "")))
         # 次要电话
         if self.resInfo['tel']:
             ids.append((f"{self.baseID}FormView1_tbxAPP_MOBILE_TEL", self.resInfo['tel'].replace("-", "")))
@@ -787,7 +817,7 @@ class AllPage(AutoUs):
             ids.append((f"{self.baseID}FormView1_cbexAPP_MOBILE_TEL_NA", ""))
         # 工作电话
         if self.resInfo['company_phone']:
-            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone'].replace("-", "")))
+            ids.append((f"{self.baseID}FormView1_tbxAPP_BUS_TEL", self.resInfo['company_phone'].strip().replace("-", "")))
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_BUS_TEL_NA", ""))
 
@@ -2044,16 +2074,20 @@ class AllPage(AutoUs):
         ids = self.waitIdSel(ids)
         if "ctl00_cphError_errorUpload" in self.driver.page_source:
             info1 = self.driver.find_element("id", "ctl00_cphError_errorUpload").text
-            if info1 == "Unable to read image memory into DibImage.":
-                self.errJson(['', info1], '照片上传失败:')
+            photo_errors = ["Unable to read image memory into DibImage.", "Image exceeds maximum file size of 240 KB"]
+            if info1 in photo_errors:
+                print("照片上传失败")
+                self.errJson([''], '照片上传失败:')
                 return 1
+            
 
         info2 = self.driver.find_element("id", "ctl00_cphMain_qualityCheckOutcome").text
 
         if info2 == "Photo passed quality standards":
             print("照片上传成功")
         else:
-            self.errJson(['', info2], '照片上传失败:')
+            print("照片上传失败")
+            self.errJson([''], '照片上传失败:')
             return 1
 
         ids = [
