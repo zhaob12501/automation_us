@@ -347,7 +347,7 @@ class AutoUs(Base):
             (f'{self.baseID}ApplicationRecovery1_btnRetrieve', ""),
         ]
         self.waitIdSel(ids)
-        for i in range(2):
+        for _ in range(2):
             if self.getNode != "":
                 break
             sleep(1)
@@ -393,20 +393,15 @@ class AutoUs(Base):
             "City has not been completed.": "城市未填",
             "State/Province has not been completed.": "州/省尚未填",
             "Country/Region has not been completed.": "国家/地区尚未选",
-            "Country/Region of Origin (Nationality) has not been completed.": "国家/地区（国籍）尚未选",
-            "The question \"Do you hold or have you held any nationality other than...?\" has not been answered.": "其它国籍未选",
             "The question \"Are you a permanent resident of a country/region other...?\" has not been answered.": "是否永久居民未选",
             "National Identification Number has not been completed.": "身份证未填",
             "U.S. Social Security Number has not been completed.": "安全号码未填",
             "U.S. Taxpayer ID Number has not been completed.": "美国身份号码未填",
             "Country/Region of Origin (Nationality) has not been completed.": "所属国家/地区（国籍）未选",
             "The question \"Do you hold or have you held any nationality other than...?\" has not been answered.": "其它国籍未选",
-            "The question \"Are you a permanent resident of a country/region other...?\" has not been answered.": "是否其它国家永久居民未选",
-            "National Identification Number has not been completed.": "身份证件号码未填",
             "U.S. Social Security Number accepts only numbers (0-9) and must be exactly nine (9) digits.": "美国安全号只能为9位数字",
             "U.S. Taxpayer ID Number accepts only numbers (0-9).": "美国身份证号只能为数字",
             "Street Address (Line 1) has not been completed.": "街道地址未填",
-            "City has not been completed.": "城市未填",
             "The question \"Is your Mailing Address the same as your Home Address?\" has not been answered.": "邮寄地址未选",
             "Email Address has not been completed.": "电子邮件地址未填",
             "Secondary Phone Number accepts only numbers (0-9).": "次要电话只能是数字",
@@ -419,9 +414,8 @@ class AutoUs(Base):
             "Expiration Date is invalid. Month, Day, and Year are required.": "失效日期未填",
             "The question \"Have you ever lost a passport or had one stolen?\" has not been answered.": "曾遗失/被盗？",
             "The explanation for question \"Explain\" has not been completed.": "遗失/被盗原因未填",
-            "The question \"Have you made specific travel plans?\" has not been answered.": "访美目的未选",
+            "The question \"Have you made specific travel plans?\" has not been answered.": "访美目的|旅行计划 未选",
             "Specify has not been completed.": "访美目的(详细)未选",
-            "The question \"Have you made specific travel plans?\" has not been answered.": "旅行计划未选",
             "Person/Entity Paying for Your Trip has not been selected.": "支付方式未选",
             "Intended Date of Arrival is invalid. Month and Year are required.": "抵达日期无效",
             "Intended Length of Stay in U.S. has not been completed.": "预计停留时间未填",
@@ -472,7 +466,6 @@ class AutoUs(Base):
             "Supervisor's Given Names has not been completed.": "主管名字未填",
             "Employer Name has not been completed.": "单位名称未填",
             "Employer Street Address (Line 1) has not been completed.": "单位街道地址未填",
-            "Postal Zone/ZIP Code has not been completed.": "单位邮编未填",
             "Job Title has not been completed.": "职务名称未填",
             "Employment Date From is invalid. Year is required.": "入职时间未填",
             "Employment Date To is invalid. Year is required.": "离职时间未填",
@@ -559,14 +552,14 @@ class AutoUs(Base):
             pass        
         return 0
 
-    def cos(self, s, no_phone=1):
+    def cos(self, s, school=1):
         """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格 
         电话只能为 0-9
         """
-        if no_phone:
-            return re.sub("[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
+        if school:
+            return re.sub(r"[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
         else:
-            return re.sub("[^0-9]+", "", s)
+            return re.sub(r"[^0-9]+", "", s)
 
 
 class AllPage(AutoUs):
@@ -666,7 +659,6 @@ class AllPage(AutoUs):
         # 判断性别-生日 日-月-年
         ids += [
             (f"{self.baseID}FormView1_rblAPP_GENDER_{0 if self.resInfo['sex'] == 'M' else 1}", ""),
-            (f"{self.baseID}FormView1_ddlDOBDay", day),
             (f"{self.baseID}FormView1_tbxDOBYear", year),
             (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[mon]),
             (f"{self.baseID}FormView1_tbxAPP_POB_CITY", self.resInfo['date_of_address']),
@@ -675,6 +667,7 @@ class AllPage(AutoUs):
 
         # 婚姻状况-国家
         seList = [
+            (f"{self.baseID}FormView1_ddlDOBDay", day),
             (f"{self.baseID}FormView1_ddlAPP_MARITAL_STATUS", self.resInfo['marriage']),
             (f"{self.baseID}FormView1_ddlAPP_POB_CNTRY", self.resInfo['date_of_country'])
         ]
@@ -873,15 +866,16 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_tbxPPT_ISSUED_IN_STATE", self.resInfo['place_issue_province']),
             # 护照 签发日期
             (f"{self.baseID}FormView1_ddlPPT_TYPE", self.resInfo['passport_category']),
-            (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEDay", iDay),
             (f"{self.baseID}FormView1_tbxPPT_ISSUEDYear", iYear),
             (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEMonth", MONTH[iMon]),
             # 护照 失效日期
-            (f"{self.baseID}FormView1_ddlPPT_EXPIRE_DTEDay", eDay),
             (f"{self.baseID}FormView1_tbxPPT_EXPIREYear", eYear),
             (f"{self.baseID}FormView1_ddlPPT_EXPIRE_DTEMonth", MONTH[eMon]),
         ]
-
+        seList += [
+            (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEDay", iDay),
+            (f"{self.baseID}FormView1_ddlPPT_EXPIRE_DTEDay", eDay),
+        ]
         # 护照是否遗失或被盗过
         if self.resInfo['passport_loss'] == 'N':
             ids.append((f"{self.baseID}FormView1_rblLOST_PPT_IND_1", ""))
@@ -943,13 +937,13 @@ class AllPage(AutoUs):
             except:
                 pass
             ids = [
-                (f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", day),
                 (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
                 (f"{self.baseID}FormView1_ddlTRAVEL_DTEMonth", MONTH[mon]),
                 (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
             ]
             ids = self.waitIdSel(ids)
-
+                
+            self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", f"{int(day)}")
             self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
 
         elif self.resPublic['travel_plans_is'] == "Y":
@@ -959,12 +953,10 @@ class AllPage(AutoUs):
             dYear, dMon, dDay = plans["leave_time"].split('-')
             ids += [
                 (f"{self.baseID}FormView1_rblSpecificTravel_0", ""),
-                (f"{self.baseID}FormView1_ddlARRIVAL_US_DTEDay", aDay),
                 (f"{self.baseID}FormView1_tbxARRIVAL_US_DTEYear", aYear),
                 (f"{self.baseID}FormView1_ddlARRIVAL_US_DTEMonth", MONTH[aMon]),
                 (f"{self.baseID}FormView1_tbxArriveFlight", plans["arrive_fly"]),
                 (f"{self.baseID}FormView1_tbxArriveCity", plans["arrive_city"]),
-                (f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEDay", dDay),
                 (f"{self.baseID}FormView1_tbxDEPARTURE_US_DTEYear", dYear),
                 (f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEMonth", MONTH[dMon]),
                 (f"{self.baseID}FormView1_tbxDepartFlight", plans["leave_fly"]),
@@ -985,6 +977,8 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
                 ]
                 ids = self.waitIdSel(ids)
+                self.choiceSelect(f"{self.baseID}FormView1_ddlARRIVAL_US_DTEDay", f"{int(aDay)}")
+                self.choiceSelect(f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEDay", f"{int(dDay)}")
                 self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
 
         # 在美停留期间的住址
@@ -1136,7 +1130,7 @@ class AllPage(AutoUs):
                 year, month, day = value["arrived_time"].split("-")
                 if index and self.old_page:
                     self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index-1}_InsertButtonPREV_US_VISIT")
-                self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_DTEDay", day)
+                self.choiceSelect(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_DTEDay", f"{int(day)}")
                 self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_ddlPREV_US_VISIT_DTEMonth", MONTH[month])
                 self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_tbxPREV_US_VISIT_DTEYear", year)
                 self.Wait(f"{self.baseID}FormView1_dtlPREV_US_VISIT_ctl0{index}_tbxPREV_US_VISIT_LOS", value["time"])
@@ -1163,7 +1157,7 @@ class AllPage(AutoUs):
         elif self.resPublic["old_visa_is"] == 'Y':
             self.Wait(f"{self.baseID}FormView1_rblPREV_VISA_IND_0")
             year, month, day = self.resPublic["old_visa_time"].split("-")
-            self.Wait(f"{self.baseID}FormView1_ddlPREV_VISA_ISSUED_DTEDay", day)
+            self.choiceSelect(f"{self.baseID}FormView1_ddlPREV_VISA_ISSUED_DTEDay", f"{int(day)}")
             self.Wait(f"{self.baseID}FormView1_ddlPREV_VISA_ISSUED_DTEMonth", MONTH[month])
             self.Wait(f"{self.baseID}FormView1_tbxPREV_VISA_ISSUED_DTEYear", year)
             # 签证号码
@@ -1301,11 +1295,10 @@ class AllPage(AutoUs):
                 year, month, day = self.resInfo["father_birth"].split("-")
                 ids += [
                     (f"{self.baseID}FormView1_tbxFathersDOBYear", year),
-                    (f"{self.baseID}FormView1_ddlFathersDOBDay", day),
                     (f"{self.baseID}FormView1_ddlFathersDOBMonth",
                      MONTH[month]),
                 ]
-
+                seList.append((f"{self.baseID}FormView1_ddlFathersDOBDay", day))
             if self.resInfo["father_america_is"] == "N":
                 ids.append((f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_1", ""))
             elif self.resInfo["father_america_is"] == "Y":
@@ -1313,7 +1306,8 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_0", ""),
                     (f"{self.baseID}FormView1_ddlFATHER_US_STATUS", self.resInfo["father_america_identity"])
                 ]
-        ids = self.waitIdSel(ids)
+        ids = self.waitIdSel(ids, seList)
+        seList = []
         # 母亲
         if not (self.resInfo['mother_name'] or self.resInfo['mother_names']):
             ids += [
@@ -1331,10 +1325,10 @@ class AllPage(AutoUs):
                 year, month, day = self.resInfo["mother_birth"].split("-")
                 ids += [
                     (f"{self.baseID}FormView1_tbxMothersDOBYear", year),
-                    (f"{self.baseID}FormView1_ddlMothersDOBDay", day),
                     (f"{self.baseID}FormView1_ddlMothersDOBMonth",
                      MONTH[month]),
                 ]
+                seList.append((f"{self.baseID}FormView1_ddlMothersDOBDay", day))
             if self.resInfo["mother_america_is"] == "N":
                 ids.append((f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_1", ""))
             elif self.resInfo["mother_america_is"] == "Y":
@@ -1342,7 +1336,8 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
                     (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
                 ]
-        ids = self.waitIdSel(ids)
+        ids = self.waitIdSel(ids, seList)
+        seList = []
         # 其它直系亲属
         if self.resInfo["other_america_is"] == "N":
             ids.append((f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
@@ -1418,12 +1413,12 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_tbxDOBYear", year),
             # 配偶出生城市
             (f"{self.baseID}FormView1_tbxSpousePOBCity", self.resInfo["spouse_birth_city"]),
-            # 配偶生日: 日
-            (f"{self.baseID}FormView1_ddlDOBDay", day),
             # 配偶生日: 月
             (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[month]),
         ]
         seList = [
+            # 配偶生日: 日
+            (f"{self.baseID}FormView1_ddlDOBDay", day),
             # 配偶的所属国家/地区（国籍）(比如：中国大陆=“China”)
             (f"{self.baseID}FormView1_ddlSpouseNatDropDownList", self.resInfo["spouse_nation"]),
             # 配偶的出生国家/地区
@@ -1478,11 +1473,11 @@ class AllPage(AutoUs):
         ids = [
             (f"{self.baseID}FormView1_tbxSURNAME", self.resInfo["spouse_name"]),
             (f"{self.baseID}FormView1_tbxGIVEN_NAME", self.resInfo["spouse_names"]),
-            (f"{self.baseID}FormView1_ddlDOBDay", day),
             (f"{self.baseID}FormView1_tbxDOBYear", year),
             (f"{self.baseID}FormView1_ddlDOBMonth", MONTH[month]),
         ]
-        ids = self.waitIdSel(ids)
+        seList = [(f"{self.baseID}FormView1_ddlDOBDay", day)]
+        ids = self.waitIdSel(ids, seList)
         self.choiceSelect(f"{self.baseID}FormView1_ddlSpouseNatDropDownList", self.resInfo["spouse_birth_country"])
         if self.resInfo["spouse_birth_city"]:
             self.Wait(f"{self.baseID}FormView1_tbxSpousePOBCity", self.resInfo["spouse_birth_city"])
@@ -1508,6 +1503,7 @@ class AllPage(AutoUs):
         print("离异人数", self.resInfo["spouse_former_count"])
         self.Wait(f"{self.baseID}FormView1_tbxNumberOfPrevSpouses", str(
             self.resInfo["spouse_former_count"]))
+        sleep(2)
         for no, human in enumerate(json.loads(self.resInfo["spouse_former_info"])):
             idName = f"{self.baseID}FormView1_DListSpouse_ctl0{no}_"
             if no and self.old_page:
@@ -1517,17 +1513,14 @@ class AllPage(AutoUs):
             dYear, dMonth, dDay = human["divorce_date"].split("-")
             self.Wait(f"{idName}tbxSURNAME", human["former_name"])
             self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
-            sleep(2)
-            self.Wait(f"{idName}tbxSURNAME", human["former_name"])
-            self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
             try:
                 self.choiceSelect(f"{idName}ddlDOBDay", day)
                 self.Wait(f"{idName}tbxDOBYear", year)
                 self.Wait(f"{idName}ddlDOBMonth", MONTH[month])
-                self.Wait(f"{idName}ddlDomDay", wDay)
+                self.choiceSelect(f"{idName}ddlDomDay", wDay)
                 self.Wait(f"{idName}txtDomYear", wYear)
                 self.Wait(f"{idName}ddlDomMonth", MONTH[wMonth])
-                self.Wait(f"{idName}ddlDomEndDay", dDay)
+                self.choiceSelect(f"{idName}ddlDomEndDay", dDay)
                 self.Wait(f"{idName}txtDomEndYear", dYear)
                 self.Wait(f"{idName}ddlDomEndMonth", MONTH[dMonth])
             except:
@@ -1595,8 +1588,6 @@ class AllPage(AutoUs):
             (f"{self.baseID}FormView1_tbxEmpSchCity", self.resWork["company_city"]),
             # 电话号码
             (f"{self.baseID}FormView1_tbxWORK_EDUC_TEL", self.cos(self.resWork["company_phone"], 0)),
-            # 所属日期
-            (f"{self.baseID}FormView1_ddlEmpDateFromDay", day),
             # 入职年份
             (f"{self.baseID}FormView1_tbxEmpDateFromYear", year),
             # 所属月份
@@ -1604,6 +1595,7 @@ class AllPage(AutoUs):
             # 请简要描述您的工作职责：
             (f"{self.baseID}FormView1_tbxDescribeDuties", self.resWork["responsibility"]),
         ]
+
 
         # 州/省份
         if self.resWork["company_province"]:
@@ -1624,6 +1616,8 @@ class AllPage(AutoUs):
             ids.append((f"{self.baseID}FormView1_cbxCURR_MONTHLY_SALARY_NA", ""))
 
         seList += [
+            # 所属日期
+            (f"{self.baseID}FormView1_ddlEmpDateFromDay", day),
             # 所属国家
             (f"{self.baseID}FormView1_ddlEmpSchCountry", self.resWork["company_country"]),
         ]
@@ -1677,6 +1671,10 @@ class AllPage(AutoUs):
                     (f"{ferId}tbEmployerPhone", self.cos(work["company_phone"], 0)),
                     # 职位
                     (f"{ferId}tbJobTitle", work["position"]),
+                    # 工作开始时间: 月
+                    (f"{ferId}ddlEmpDateFromMonth", MONTH[sMonth]),
+                    # 工作结束时间: 月
+                    (f"{ferId}ddlEmpDateToMonth", MONTH[eMonth]),
                     # 工作开始时间: 年
                     (f"{ferId}tbxEmpDateFromYear", sYear),
                     # 工作结束时间: 年
@@ -1684,15 +1682,11 @@ class AllPage(AutoUs):
                     # 简述工作职责
                     (f"{ferId}tbDescribeDuties", work["responsibility"]),
                 ]
-                ids += [
+                seList += [
                     # 工作开始时间: 日
-                    (f"{ferId}ddlEmpDateFromDay", sDay),
-                    # 工作开始时间: 月
-                    (f"{ferId}ddlEmpDateFromMonth", MONTH[sMonth]),
+                    (f"{ferId}ddlEmpDateFromDay", f"{int(sDay)}"),
                     # 工作结束时间: 日
-                    (f"{ferId}ddlEmpDateToDay", eDay),
-                    # 工作结束时间: 月
-                    (f"{ferId}ddlEmpDateToMonth", MONTH[eMonth]),
+                    (f"{ferId}ddlEmpDateToDay", f"{int(eDay)}"),
                 ]
                 # 州省
                 if work["company_province"]:
@@ -1741,20 +1735,20 @@ class AllPage(AutoUs):
                     (f"{ferId}tbxSchoolCity", school["city"]),
                     # 课程
                     (f"{ferId}tbxSchoolCourseOfStudy", school["course"]),
-                    # 就读日期: 日
-                    (f"{ferId}ddlSchoolFromDay", aDay),
                     # 就读日期: 年
                     (f"{ferId}tbxSchoolFromYear", aYear),
                     # 就读日期: 月
                     (f"{ferId}ddlSchoolFromMonth", MONTH[aMonth]),
-                    # 毕业日期: 日
-                    (f"{ferId}ddlSchoolToDay", gDay),
                     # 毕业日期: 年
                     (f"{ferId}tbxSchoolToYear", gYear),
                     # 毕业日期: 月
                     (f"{ferId}ddlSchoolToMonth", MONTH[gMonth]),
                 ]
                 seList += [
+                    # 就读日期: 日
+                    (f"{ferId}ddlSchoolFromDay", f"{int(aDay)}"),
+                    # 毕业日期: 日
+                    (f"{ferId}ddlSchoolToDay", f"{int(gDay)}"),
                     # 国家
                     (f"{ferId}ddlSchoolCountry", school["country"])
                 ]
@@ -1853,20 +1847,22 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_RANK", value["level"]),
                     # 军事特长
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_SPECIALTY", value["military"]),
-                    # 服役开始日
-                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMDay", sDay),
                     # 服役开始年份
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_FROMYear", sYear),
                     # 服役开始月份
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMMonth", MONTH[sMonth]),
-                    # 服役结束日
-                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TODay", eDay),
                     # 服役结束年份
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_tbxMILITARY_SVC_TOYear", eYear),
                     # 服役结束月份
                     (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TOMonth", MONTH[eMonth]),
                 ]
-                ids = self.waitIdSel(ids)
+                seList = [
+                    # 服役开始日
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_FROMDay", f"{int(sDay)}"),
+                    # 服役结束日
+                    (f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_TODay", f"{int(eDay)}"),
+                ]
+                ids = self.waitIdSel(ids, seList)
                 # 服役国家
                 self.choiceSelect(f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_CNTRY",  value["country"])
 
@@ -1905,7 +1901,7 @@ class AllPage(AutoUs):
         """ 安全与背景页 """
         print("安全与背景页")
 
-        btn = [(f"{self.baseID}UpdateButton3", "")]
+        # btn = [(f"{self.baseID}UpdateButton3", "")]
 
         sec1 = self.get_sec(f"status1", "Disease")
         sec2 = self.get_sec(f"status2", "Disorder")

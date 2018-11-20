@@ -36,7 +36,7 @@ class RunPayInfo:
             # 获取需要申请的人员信息
             self.usPay = AutoPay(
                 data=self.usPipe.order_data, 
-                usPipe=self.usPipe, noWin=True
+                usPipe=self.usPipe, #noWin=True
             )
             email_info = self.usPipe.get_group_email(
                 self.usPipe.order_data[0]["mpid"])

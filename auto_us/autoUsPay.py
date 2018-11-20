@@ -7,6 +7,7 @@ from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
 from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
                        sleep, strftime, time)
 
+
 class AutoPay(AutoUs):
     """ 
         # =============================================== #
@@ -25,7 +26,8 @@ class AutoPay(AutoUs):
             self.resInfos = data[2][1:]
             self.resWorks = data[3][1:]
             self.email = self.resInfo["home_email"]
-            self.group_email_info = self.usPipe.get_group_email(self.res["mpid"])
+            self.group_email_info = self.usPipe.get_group_email(
+                self.res["mpid"])
 
     def register(self):
         register_id_befor = "Registration:SiteTemplate:theForm"
@@ -94,7 +96,8 @@ class AutoPay(AutoUs):
                 if "无法核实验证码。请重新输入。" in self.driver.page_source:
                     continue
                 elif "确保用户名和密码正确" in self.driver.page_source:
-                    self.usPipe.uploadOrder(self.res["id"], ques="邮箱用户名或密码不正确", interview_status="0")
+                    self.usPipe.uploadOrder(
+                        self.res["id"], ques="邮箱用户名或密码不正确", interview_status="0")
                     return 1
                 else:
                     break
@@ -289,13 +292,6 @@ class AutoPay(AutoUs):
         self.usPipe.uploadOrder(self.res['id'], interview_img=res)
 
         if self.resPublic["associate_is"] == "Y" and self.resPublic["associate_tuxedo_is"] == "N":
-            relDic = {
-                "S": "Spouse",
-                "PF": "Father",
-                "PM": "Mother",
-                "CD": "Daughter",
-                "DS": "Son",
-            }
             # 同行人个数
             print("同行人个数")
             length = len(self.resPublics)
@@ -316,7 +312,6 @@ class AutoPay(AutoUs):
                     self.errJson([self.resInfos[i]["username"]],
                                  "同行人", status=0)
                     return
-                rela = relDic.get(relation, "Other")
                 self.Wait(
                     xpath='//*[@id="j_id0:SiteTemplate:showPopUp"]/table/tbody/tr[2]/td[1]/select', text="Other")
                 self.Wait("j_id0:SiteTemplate:showPopUp:j_id132",
@@ -417,7 +412,8 @@ class AutoPay(AutoUs):
         try:
             # 点击继续
             wait = WebDriverWait(self.driver, 2, 0.1)
-            locator = ("xpath", '//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "继续")]')
+            locator = (
+                "xpath", '//*[@id="j_id0:SiteTemplate:j_id52:j_id53:j_id54:j_id58"]/a[contains(text(), "继续")]')
             wait.until(EC.presence_of_element_located(locator)).click()
             jx = 1
         except:
@@ -485,7 +481,8 @@ class AutoPay(AutoUs):
                 pass
             while 1:
                 try:
-                    self.Wait(xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
+                    self.Wait(
+                        xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
                     break
                 except:
                     self.Wait(xpath='//*[@id="datepicker"]/div/div[3]/div/a')
@@ -533,7 +530,8 @@ class AutoPay(AutoUs):
             else:
                 reg = r"myDayHash\['(.*?)'\] = true;"
                 data = re.findall(reg, self.driver.page_source)
-        if self.reservation(data): return 1
+        if self.reservation(data):
+            return 1
         self.getDates(error=True)
         self.usPipe.uploadOrder(self.res["id"], interview_status='5')
 
@@ -730,7 +728,8 @@ class AutoPay(AutoUs):
                 "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[1]')).select_by_value(zx["city"])
             try:
                 wait = WebDriverWait(self.driver, 2, 0.1)
-                locator = ('xpath', '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')
+                locator = (
+                    'xpath', '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')
                 wait.until(EC.presence_of_element_located(locator))
                 Select(self.driver.find_element(
                     "xpath", '//*[@id="thePage:SiteTemplate:theForm:pickupBlocks"]/div[1]/select[2]')).select_by_value(zx["area"])
@@ -763,12 +762,13 @@ class AutoPay(AutoUs):
                 xpath='//*[@id="thePage:SiteTemplate:theForm:j_id176"]/table/tbody/tr[4]/td[2]/input', text=zx["mail_code"])
             # self.Wait(
             #     xpath='//*[@id="thePage:SiteTemplate:theForm:thePage"]/table/tbody/tr[3]/td[2]/input')
-                
+
     # 付款填写收据 | 返回付款编号
     def receipt(self, code=''):
         try:
             wait = WebDriverWait(self.driver, 2, 0.1)
-            locator = ("css selector", "tr > td:last-child > input[type='submit']")
+            locator = ("css selector",
+                       "tr > td:last-child > input[type='submit']")
             wait.until(EC.presence_of_element_located(locator)).click()
         except:
             pass
@@ -788,10 +788,12 @@ class AutoPay(AutoUs):
                 pass
             try:
                 wait = WebDriverWait(self.driver, 2, 0.1)
-                locator = ('xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
+                locator = (
+                    'xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
                 wait.until(EC.presence_of_element_located(locator)).click()
             except:
-                self.Wait(css='table > tbody:nth-child(1) > tr:nth-child(2) > td > a')
+                self.Wait(
+                    css='table > tbody > tr:nth-child(2) > td:first-child > a')
                 self.Wait(css='#referenceCell', text=NC)
                 code = self.driver.find_element_by_css_selector(
                     '#referenceCell').text
@@ -872,7 +874,8 @@ class AutoPay(AutoUs):
                 '#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a').click()
 
     def history(self):
-        history_element = self.Wait(css="#ctl00_nav_side1 > ul > li:nth-child(3) > a", text=NC)
+        history_element = self.Wait(
+            css="#ctl00_nav_side1 > ul > li:nth-child(3) > a", text=NC)
         # self.Wait(css="#ctl00_nav_side1 > ul > li:nth-child(3) > a")
         print(history_element.text)
         if history_element.text != "预约历史":
@@ -898,14 +901,16 @@ class AutoPay(AutoUs):
 
     # 开始预约
     def group_pay_over(self, rob=0):
-        if self.groupLogin(): return
+        if self.groupLogin():
+            return
         if self.selApp(self.res["replace"]):
             return
         self.middle()
         self.add_user()
         # self.Wait(css="input[type='button']")
         self.mail()
-        if self.receipt(): return 
+        if self.receipt():
+            return
         if not rob:
             self.AppLast()
         else:
@@ -914,7 +919,7 @@ class AutoPay(AutoUs):
             while time() - start_time < 3600:
                 if self.reservation(self.getDates()):
                     return 1
-            else: 
+            else:
                 return 0
         self.driver.quit()
 
@@ -924,22 +929,27 @@ class AutoPay(AutoUs):
         if self.res["python_status"] == 1 or error:
             reg = r'<td>(\d\d:\d\d)</td>'
             appointment_dates = {}
-            elements = self.driver.find_elements_by_css_selector("td > a.ui-state-default")
+            elements = self.driver.find_elements_by_css_selector(
+                "td > a.ui-state-default")
             for index in range(len(elements)):
                 try:
-                    d, m, y = dates[index].split("-")
+                    d, m, _ = dates[index].split("-")
                     m = f"{m:0>2}"
                     elements[index].click()
-                    self.Wait(xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[m]} {int(d)}")]', text=NC)
+                    self.Wait(
+                        xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[m]} {int(d)}")]', text=NC)
                     times = re.findall(reg, self.driver.page_source)
                     appointment_dates[dates[index]] = ','.join(times)
-                    elements = self.driver.find_elements_by_css_selector("td > a.ui-state-default")
+                    elements = self.driver.find_elements_by_css_selector(
+                        "td > a.ui-state-default")
                 except Exception as e:
                     print(e)
                     continue
 
-            upload_dates = '|'.join([f"{i}&{appointment_dates[i]}" for i in appointment_dates])
-            self.usPipe.uploadDays(self.resInfo["activity"], interview_days=upload_dates)
+            upload_dates = '|'.join(
+                [f"{i}&{appointment_dates[i]}" for i in appointment_dates])
+            self.usPipe.uploadDays(
+                self.resInfo["activity"], interview_days=upload_dates)
             self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return dates
 
@@ -955,5 +965,3 @@ class AutoPay(AutoUs):
     # def group_cancel(self):
         # self.groupLogin()
         # self.selApp(True)
-
-        

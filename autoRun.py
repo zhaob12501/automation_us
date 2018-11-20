@@ -92,7 +92,7 @@ class UsRun:
                 # =======
                 print('有数据进行提交\n')
                 self.au = AllPage(data=self.auto.data,
-                                  noWin=True, usPipe=self.auto)
+                                  noWin=False, usPipe=self.auto)
                 try:
                     self.control[self.au.resPublic["visa_status"]]()
                 except Exception as e:
