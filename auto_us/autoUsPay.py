@@ -5,7 +5,7 @@ from PIL import Image
 
 from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
 from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
-                       sleep, strftime, time)
+                       sleep, strftime, time, strptime, mktime)
 
 
 class AutoPay(AutoUs):
@@ -540,7 +540,11 @@ class AutoPay(AutoUs):
                                             interview_status="8", interview_pdf=res, interview_num=self.res["interview_num"]-1)
                     print("预约成功")
                     return 1
-            return 0
+        else: 
+            if not z or time() - mktime(strptime(z, "%Y-%m-%d")) > 0:
+                self.usPipe.uploadOrder(ids=self.res["id"], interview_status="5")
+            self.getDates(1)
+        return 0
 
     def appointment(self, data=None):
         if not data:
