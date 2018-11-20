@@ -102,7 +102,7 @@ class Base:
         self.driver = webdriver.Chrome(
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(5)
         # self.driver.maximize_window()
         # 设置显性等待时间, timeout = 10, 间隔 0.3s 检查一次
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
@@ -116,7 +116,7 @@ class Base:
         self.driver = webdriver.Chrome(
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(5)
         # self.driver.maximize_window()
         # 设置显性等待时间, timeout = 10, 间隔 0.3s 检查一次
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
@@ -372,6 +372,8 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Date of Arrival in U.S. is invalid. Month, Day, and Year are required.": "到达日期有误",
+            "Date of Departure from U.S. is invalid. Month, Day, and Year are required.": "离美日期有误",
             "Phone Number accepts only numbers (0-9).": "电话只能为数字 0-9",
             "Primary Phone Number accepts only numbers (0-9).": "主要电话只能为数字 0-9",
             "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
@@ -962,23 +964,26 @@ class AllPage(AutoUs):
                 (f"{self.baseID}FormView1_tbxDepartFlight", plans["leave_fly"]),
                 (f"{self.baseID}FormView1_tbxDepartCity", plans["leave_city"]),
             ]
+            seList = [
+                (f"{self.baseID}FormView1_ddlARRIVAL_US_DTEDay", f"{int(aDay)}"),
+                (f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEDay", f"{int(dDay)}")
+            ]
             for index, value in enumerate(json.loads(self.resPublic["plans_access"])):
                 if index and self.old_page:
                     ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index - 1}_InsertButtonTravelLoc", ""))
                 ids.append((f"{self.baseID}FormView1_dtlTravelLoc_ctl0{index}_tbxSPECTRAVEL_LOCATION", value["city"]))
             try:
-                ids = self.waitIdSel(ids)
+                ids = self.waitIdSel(ids, seList)
+                seList = []
             except:
                 year, mon, day = self.resPublic['arrive_time'].split('-')
                 ids = [
-                    (f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", day),
                     (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
                     (f"{self.baseID}FormView1_ddlTRAVEL_DTEMonth", MONTH[mon]),
                     (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
                 ]
                 ids = self.waitIdSel(ids)
-                self.choiceSelect(f"{self.baseID}FormView1_ddlARRIVAL_US_DTEDay", f"{int(aDay)}")
-                self.choiceSelect(f"{self.baseID}FormView1_ddlDEPARTURE_US_DTEDay", f"{int(dDay)}")
+                self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", f"{int(day)}")
                 self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
 
         # 在美停留期间的住址
