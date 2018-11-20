@@ -460,66 +460,86 @@ class AutoPay(AutoUs):
         self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return data
 
-    # 预约
+    # 预约 / 抢预约
     def reservation(self, data):
-        """ {"day":"30-10-2018","t":"08:30"} """
+        """ 预约: {"day":"30-10-2018","t":"08:30"} 
+        抢预约: {"day":"22-11-2018,23-11-2018","z":"2018-11-25"} """
         userDate = json.loads(self.res["interview_time"])
-
-        # userDate["day"] = userDate["day"].split(",")
-        # tim = {
-        #     "am": APPDAYS[:5],
-        #     "pm": APPDAYS[-4:],
-        #     "am,pm": APPDAYS
-        # }
-        if userDate["day"] in data:
-            d = f'{userDate["day"].split("-")[0]:0>2}'
-            mo = f'{userDate["day"].split("-")[1]:0>2}'
-            try:
-                Select(self.driver.find_element_by_xpath(
-                    '//select')).select_by_index(1)
-            except:
-                pass
-            while 1:
+        days = userDate.get("day").split(",")
+        t = userDate.get("t")
+        z = userDate.get("z")
+        for day in days:
+            if day in data:
+                d = f'{day.split("-")[0]:0>2}'
+                mo = f'{day.split("-")[1]:0>2}'
                 try:
-                    self.Wait(
-                        xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
-                    break
+                    Select(self.driver.find_element_by_xpath(
+                        '//select')).select_by_index(1)
                 except:
-                    self.Wait(xpath='//*[@id="datepicker"]/div/div[3]/div/a')
+                    pass
+                while 1:
+                    try:
+                        self.Wait(
+                            xpath=f'//*[@id="datepicker"]/div/div/div/div/span[contains(text(), {MON[mo]})]', text=NC)
+                        break
+                    except:
+                        self.Wait(
+                            xpath='//*[@id="datepicker"]/div/div[3]/div/a')
 
-            divs = self.driver.find_elements_by_css_selector(
-                '#datepicker > div > div.ui-datepicker-group')
-            for div in divs:
-                if div.find_element_by_xpath('./div/div/span').text == MON[mo]:
-                    div.find_element_by_xpath(
-                        f".//a[contains(text(), {int(d)})]").click()
-                    break
+                divs = self.driver.find_elements_by_css_selector(
+                    '#datepicker > div > div.ui-datepicker-group')
+                for div in divs:
+                    if div.find_element_by_xpath('./div/div/span').text == MON[mo]:
+                        div.find_element_by_xpath(
+                            f".//a[contains(text(), {int(d)})]").click()
+                        break
 
-            self.Wait(
-                xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
-            reg = r'<td>(\d\d:\d\d)</td>'
-            times = re.findall(reg, self.driver.page_source)
-            if userDate["t"] in times:
                 self.Wait(
-                    xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["t"]}")]/preceding-sibling::td[1]/input')
-                s_time = self.driver.find_element_by_xpath(
-                    f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{userDate["t"]}")]').text
-                self.Wait("thePage:SiteTemplate:theForm:addItem")
-                self.Wait(
-                    xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
-                self.Wait(
-                    xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
-                with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
-                    file = {"file": ("AppointmentConfirmation.pdf",
-                                     f.read(), "application/pdf")}
-                url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
-                res = requests.post(url, files=file).json()
-                success_time = f"{'-'.join([userDate['day'].split('-')][::-1])} {s_time}"
-                # 存入数据库
-                self.usPipe.uploadOrder(ids=self.res["id"], interview_success=success_time,
-                                        interview_status="6", interview_pdf=res, interview_num=self.res["interview_num"]-1)
-                print("预约成功")
-                return 1
+                    xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]', text=NC)
+                reg = r'<td>(\d\d:\d\d)</td>'
+                times = re.findall(reg, self.driver.page_source)
+                if t in times:
+                    self.Wait(
+                        xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{t}")]/preceding-sibling::td[1]/input')
+                    s_time = self.driver.find_element_by_xpath(
+                        f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{t}")]').text
+                    self.Wait("thePage:SiteTemplate:theForm:addItem")
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
+                    with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+                        file = {"file": ("AppointmentConfirmation.pdf",
+                                         f.read(), "application/pdf")}
+                    url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+                    res = requests.post(url, files=file).json()
+                    success_time = f"{'-'.join([userDate['day'].split('-')][::-1])} {s_time}"
+                    # 存入数据库
+                    self.usPipe.uploadOrder(ids=self.res["id"], interview_success=success_time,
+                                            interview_status="6", interview_pdf=res, interview_num=self.res["interview_num"]-1)
+                    print("预约成功")
+                    return 1
+                elif z:
+                    self.Wait(
+                        xpath=f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]/preceding-sibling::td[1]/input')
+                    s_time = self.driver.find_element_by_xpath(
+                        f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]/preceding-sibling::td[2]').text
+                    self.Wait("thePage:SiteTemplate:theForm:addItem")
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
+                    self.Wait(
+                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
+                    with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+                        file = {"file": ("AppointmentConfirmation.pdf",
+                                         f.read(), "application/pdf")}
+                    url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
+                    res = requests.post(url, files=file).json()
+                    success_time = f"{'-'.join([userDate['day'].split('-')][::-1])} {s_time}"
+                    # 存入数据库
+                    self.usPipe.uploadOrder(ids=self.res["id"], interview_success=success_time,
+                                            interview_status="8", interview_pdf=res, interview_num=self.res["interview_num"]-1)
+                    print("预约成功")
+                    return 1
             return 0
 
     def appointment(self, data=None):
