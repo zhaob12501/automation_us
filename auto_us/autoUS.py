@@ -76,8 +76,7 @@ class Base:
         # 设置浏览器窗口大小
         self.chrome_options.add_argument('window-size=800x3000')
         download_dir = os.path.join(BASEDIR, 'usFile') # for linux/*nix, download_dir="/usr/Public"
-    
-                #----------页面打印版pdf下载-----------------
+        #----------页面打印版pdf下载-----------------
         appState = { 
             "recentDestinations": [ 
                 { 

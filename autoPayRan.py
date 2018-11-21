@@ -40,7 +40,7 @@ class RunPayInfo:
             )
             email_info = self.usPipe.get_group_email(
                 self.usPipe.order_data[0]["mpid"])
-            if email_info["status"] != 1:
+            if not email_info or email_info["status"] != 1:
                 if not self.usPay.res["register_is"]:
                     self.register()
                 self.usPay.payInfo()
