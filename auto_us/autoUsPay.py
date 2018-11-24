@@ -4,8 +4,9 @@ import requests
 from PIL import Image
 
 from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
+from .fateadm import Captcha
 from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
-                       sleep, strftime, time, strptime, mktime)
+                       mktime, sleep, strftime, strptime, time)
 
 
 class AutoPay(AutoUs):
@@ -44,13 +45,14 @@ class AutoPay(AutoUs):
                   self.resInfo["english_name_s"])
         self.Wait(f"{register_id_befor}:lastname",
                   self.resInfo["english_name"])
-        while self.driver != "https://cgifederal.secure.force.com/applicanthome":
+        for _ in range(5):
             try:
-                result = self.getCaptcha(f"{register_id_befor}:theId")
                 self.Wait(f"{register_id_befor}:password", PASSWD)
                 self.Wait(f"{register_id_befor}:confirmPassword", PASSWD)
-                self.Wait(
-                    f"{register_id_befor}:recaptcha_response_field", result)
+                # result = self.getCaptcha(f"{register_id_befor}:theId")
+                # self.Wait(f"{register_id_befor}:recaptcha_response_field", result)
+                rsp = self.getCaptcha(f"{register_id_befor}:theId", pred_type="20500")
+                self.Wait(f"{register_id_befor}:recaptcha_response_field", rsp.pred_rsp.value)
                 sleep(1)
                 self.Wait(f"{register_id_befor}:submit")
             except:
@@ -58,6 +60,15 @@ class AutoPay(AutoUs):
             if "SiteRegister" not in self.driver.current_url:
                 break
             sleep(2)
+            if self.driver != "https://cgifederal.secure.force.com/applicanthome":
+                break
+            if "无法核实验证码。请重新输入。" in self.driver.page_source:
+                    Captcha(4, rsp=rsp)
+                    continue
+        else:
+            print("验证码 5 次错误, 重启")
+            return 1
+            
         Select(self.Wait(xpath='//select', text=NC)).select_by_index(1)
         self.usPipe.uploadOrder(self.res["id"], register_is=1)
 
@@ -81,19 +92,17 @@ class AutoPay(AutoUs):
         for _ in range(5):
             try:
                 # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", "janice522")
-                self.Wait(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
-                result = self.getCaptcha(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
-                result = result.replace("1", "l")
-                self.Wait(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", result)
+                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
+                # result = self.getCaptcha("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
+                # result = result.replace("1", "l")
+                rsp = self.getCaptcha("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId", pred_type="20500")
+                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", rsp.pred_rsp.value)
                 sleep(0.5)
                 # 点击登陆
                 print("点击登陆")
-                self.Wait(
-                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:loginButton")
+                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:loginButton")
                 if "无法核实验证码。请重新输入。" in self.driver.page_source:
+                    Captcha(4, rsp=rsp)
                     continue
                 elif "确保用户名和密码正确" in self.driver.page_source:
                     self.usPipe.uploadOrder(
@@ -816,8 +825,13 @@ class AutoPay(AutoUs):
                     'xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
                 wait.until(EC.presence_of_element_located(locator)).click()
             except:
-                self.Wait(
-                    css='table > tbody > tr:nth-child(2) > td:first-child > a')
+                pass
+            try:
+                wait = WebDriverWait(self.driver, 2, 0.1)
+                locator = (
+                    'css selector', 'table > tbody > tr:nth-child(2) > td:first-child > a')
+                wait.until(EC.presence_of_element_located(locator)).click()
+
                 self.Wait(css='#referenceCell', text=NC)
                 code = self.driver.find_element_by_css_selector(
                     '#referenceCell').text
@@ -825,6 +839,8 @@ class AutoPay(AutoUs):
                     self.usPipe.uploadOrder(
                         self.res["id"], interview_status=2, pay_code=code, python_status=0)
                     return code
+            except: 
+                pass
         return 0
 
     # 预约查询
@@ -979,8 +995,14 @@ class AutoPay(AutoUs):
 
     def AppLast(self):
         # =====
-        # 预约-未付款-待完善
-        self.Wait(xpath='//*[@id="mainContent"]/div/form/div/input[2]')
+        try:
+            sleep(2)
+            # 预约-未付款-待完善
+            self.Wait(xpath='//*[@id="mainContent"]/div/form/div/input[2]')
+        except:
+            sleep(2)
+            # 预约-未付款-待完善
+            self.Wait(xpath='//*[@id="mainContent"]/div/form/div/input[2]')
         sleep(1)
         dates = self.getDates()
         if self.res["interview_status"] == 4:

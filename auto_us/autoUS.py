@@ -19,10 +19,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
+from .fateadm import Captcha
 from .settings import (BASEDIR, MON, MONTH, NC, PASSWD, USER, USERPHOTO,
                        UsError, json, os, sleep, strftime, sys)
 from .yunsu import upload
-
 
 nodeInfo = {
     "Personal1": "5% 个人信息1",
@@ -121,7 +121,7 @@ class Base:
         self.wait = WebDriverWait(self.driver, 5, 0.2, "请求超时")
 
     # 获取验证码
-    def getCaptcha(self, id='', element=None, a=0):
+    def getCaptcha(self, id='', element=None, a=0, pred_type="306005000"):
         """ 验证码识别
             根据页面验证码元素位置, 截取验证码图片
             发送验证码识别请求,返回验证码文字
@@ -146,9 +146,10 @@ class Base:
                         captcha_right, captcha_bottom))
         img.save('code.png')
         sleep(0.5)
-        result = upload()
-        print(f"验证码为: {result}")
-        return result
+        # result = upload()
+        rsp = Captcha(2, path='code.png', pred_type=pred_type)
+        print(f"验证码为: {rsp.pred_rsp.value}")
+        return rsp
 
     # 检测元素 / 点击 / 发送字符 / 选择下拉框
     def Wait(self, idName=None, text=None, xpath=None, css=None):
@@ -268,14 +269,18 @@ class AutoUs(Base):
             for _ in range(10):
                 img = wait.until(EC.presence_of_element_located(("xpath", "//img")))
                 print("开始的验证")
-                res = self.getCaptcha(element=img, a=10)
+                # res = self.getCaptcha(element=img, a=10)
+                rsp = self.getCaptcha(element=img, a=10, pred_type="30600")
+                res = rsp.pred_rsp.value
                 self.driver.find_element("id", "ans").send_keys(res)
                 self.driver.find_element("id", "jar").click()
+                sleep(2)
                 try:
                     wait.until(EC.presence_of_element_located(("id", f"{self.baseID}ucLocation_ddlLocation")))
                     break
                 except:
-                    continue
+                    pass
+                Captcha(4, rsp=rsp)
         except:
             pass
 
@@ -297,15 +302,24 @@ class AutoUs(Base):
             self.errJson([], '领区未选')
         # self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", 'BEJ')
         #　识别验证码
-        while self.driver.current_url == self.usUrl:
+        for _ in range(5):
             try:
-                result = self.getCaptcha('c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                # result = self.getCaptcha('c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                # self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                rsp = self.getCaptcha('c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', rsp.pred_rsp.value)
                 sleep(1)
                 self.Wait(f'{self.baseID}lnkNew')
             except:
                 pass
             sleep(2)
+            if self.driver.current_url == self.usUrl:
+                break
+            Captcha(4, rsp=rsp)
+        else:
+            print("验证码 5 次错误, 重启")
+            return 1
+            
 
         self.Wait(f"{self.baseID}txtAnswer", self.answer)
         self.Wait(f"{self.baseID}btnContinue")
@@ -327,15 +341,23 @@ class AutoUs(Base):
         else:
             self.errJson([], '领区未选')
         
-        while self.driver.current_url == self.usUrl:
+        for _ in range(5):
             try:
-                result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
-                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                # result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                # self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', result)
+                rsp = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
+                self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', rsp.pred_rsp.value)
                 self.Wait(f'{self.baseID}lnkRetrieve')
                 if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
             except: pass
             sleep(2)
-
+            if self.driver.current_url == self.usUrl:
+                break
+            Captcha(4, rsp=rsp)
+        else:
+            print("验证码 5 次错误, 重启")
+            return 1
+            
         self.Wait(f"{self.baseID}ApplicationRecovery1_tbxApplicationID", self.resPublic['aacode'])
 
         ids = [
@@ -2148,4 +2170,3 @@ class AllPage(AutoUs):
         self.renamePdf()
         print("page over...")
         self.progress("100% 成功")
-

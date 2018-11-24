@@ -28,6 +28,7 @@ settings.py
 text.py
 test.py
 *.txt
-evus/*
+evus
 *.gif
 .history
+*.sql
