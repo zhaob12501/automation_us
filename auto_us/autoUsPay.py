@@ -1,12 +1,15 @@
+import json
+import os
 import re
+from time import mktime, sleep, strftime, strptime, time
 
 import requests
 from PIL import Image
 
 from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
 from .fateadm import Captcha
-from .settings import (APPDAYS, MON, MON_ANTI, NC, PASSWD, USER, UsError, json,
-                       mktime, sleep, strftime, strptime, time)
+from .settings import (APPDAYS, BASEDIR, MON, MON_ANTI, NC, PASSWD, USER,
+                       UsError)
 
 
 class AutoPay(AutoUs):
@@ -51,8 +54,10 @@ class AutoPay(AutoUs):
                 self.Wait(f"{register_id_befor}:confirmPassword", PASSWD)
                 # result = self.getCaptcha(f"{register_id_befor}:theId")
                 # self.Wait(f"{register_id_befor}:recaptcha_response_field", result)
-                rsp = self.getCaptcha(f"{register_id_befor}:theId", pred_type="20500")
-                self.Wait(f"{register_id_befor}:recaptcha_response_field", rsp.pred_rsp.value)
+                rsp = self.getCaptcha(
+                    f"{register_id_befor}:theId", pred_type="20500")
+                self.Wait(
+                    f"{register_id_befor}:recaptcha_response_field", rsp.pred_rsp.value)
                 sleep(1)
                 self.Wait(f"{register_id_befor}:submit")
             except:
@@ -60,15 +65,15 @@ class AutoPay(AutoUs):
             if "SiteRegister" not in self.driver.current_url:
                 break
             sleep(2)
-            if self.driver != "https://cgifederal.secure.force.com/applicanthome":
+            if self.driver == "https://cgifederal.secure.force.com/applicanthome":
                 break
             if "无法核实验证码。请重新输入。" in self.driver.page_source:
-                    Captcha(4, rsp=rsp)
-                    continue
+                Captcha(4, rsp=rsp)
+                continue
         else:
             print("验证码 5 次错误, 重启")
             return 1
-            
+
         Select(self.Wait(xpath='//select', text=NC)).select_by_index(1)
         self.usPipe.uploadOrder(self.res["id"], register_is=1)
 
@@ -92,15 +97,19 @@ class AutoPay(AutoUs):
         for _ in range(5):
             try:
                 # self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", "janice522")
-                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
+                self.Wait(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:password", pwd)
                 # result = self.getCaptcha("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId")
                 # result = result.replace("1", "l")
-                rsp = self.getCaptcha("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId", pred_type="20500")
-                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", rsp.pred_rsp.value)
+                rsp = self.getCaptcha(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:theId", pred_type="20500")
+                self.Wait(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:recaptcha_response_field", rsp.pred_rsp.value)
                 sleep(0.5)
                 # 点击登陆
                 print("点击登陆")
-                self.Wait("loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:loginButton")
+                self.Wait(
+                    "loginPage:SiteTemplate:siteLogin:loginComponent:loginForm:loginButton")
                 if "无法核实验证码。请重新输入。" in self.driver.page_source:
                     Captcha(4, rsp=rsp)
                     continue
@@ -549,9 +558,10 @@ class AutoPay(AutoUs):
                                             interview_status="8", interview_pdf=res, interview_num=self.res["interview_num"]-1)
                     print("预约成功")
                     return 1
-        else: 
+        else:
             if not z or time() - mktime(strptime(z, "%Y-%m-%d")) > 0:
-                self.usPipe.uploadOrder(ids=self.res["id"], interview_status="5")
+                self.usPipe.uploadOrder(
+                    ids=self.res["id"], interview_status="5")
             self.getDates(1)
         return 0
 
@@ -701,18 +711,18 @@ class AutoPay(AutoUs):
     def pay_user_img(self):
         # 客户信息资料查看
         self.Wait(css="div#summary > ul", text=NC)
-        self.driver.save_screenshot("usFile/info.png")
+        self.driver.save_screenshot(os.path.join(BASEDIR, "usFile/info.png"))
         info = self.driver.find_element_by_css_selector("div#summary > ul")
         info_left = info.location['x']
         info_top = info.location['y']
         info_right = info.location['x'] + info.size['width']
         info_bottom = info.location['y'] + info.size['height']
-        img = Image.open("usFile/info.png")
+        img = Image.open(os.path.join(BASEDIR, "usFile/info.png"))
         img = img.crop((info_left, info_top,
                         info_right, info_bottom))
-        img.save("usFile/info.png")
+        img.save(os.path.join(BASEDIR, "usFile/info.png"))
         sleep(1)
-        with open("usFile/info.png", "rb") as f:
+        with open(os.path.join(BASEDIR, "usFile/info.png"), "rb") as f:
             img = {"file": ("info.png", f.read(), "image/png")}
         url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
         res = requests.post(url, files=img).json()
@@ -839,7 +849,7 @@ class AutoPay(AutoUs):
                     self.usPipe.uploadOrder(
                         self.res["id"], interview_status=2, pay_code=code, python_status=0)
                     return code
-            except: 
+            except:
                 pass
         return 0
 

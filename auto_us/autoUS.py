@@ -189,7 +189,7 @@ class Base:
                           f"value : {text if text and text != NC else 'None'}\n\n")
         return 0
 
-    def choiceSelect(self, selectid=None, value=None, t=0.3):
+    def choiceSelect(self, selectid=None, value=None, t=0.2):
         """ 下拉框选择器
             根据 value 选择下拉框
         """
@@ -261,6 +261,7 @@ class AutoUs(Base):
 
     # 开始的验证
     def start_captcha(self):
+        one = False
         try:
             wait = WebDriverWait(self.driver, 2, 0.2, "请求超时")
             wait.until(EC.presence_of_element_located(("id", "clntcap_frame")))
@@ -269,6 +270,8 @@ class AutoUs(Base):
             for _ in range(10):
                 img = wait.until(EC.presence_of_element_located(("xpath", "//img")))
                 print("开始的验证")
+                if one:
+                    Captcha(4, rsp=rsp)
                 # res = self.getCaptcha(element=img, a=10)
                 rsp = self.getCaptcha(element=img, a=10, pred_type="30600")
                 res = rsp.pred_rsp.value
@@ -280,7 +283,7 @@ class AutoUs(Base):
                     break
                 except:
                     pass
-                Captcha(4, rsp=rsp)
+                one = True
         except:
             pass
 
@@ -313,9 +316,10 @@ class AutoUs(Base):
             except:
                 pass
             sleep(2)
-            if self.driver.current_url == self.usUrl:
-                break
-            Captcha(4, rsp=rsp)
+            if self.driver.current_url in self.usUrl:
+                Captcha(4, rsp=rsp)
+                continue
+            break
         else:
             print("验证码 5 次错误, 重启")
             return 1
@@ -351,9 +355,10 @@ class AutoUs(Base):
                 if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
             except: pass
             sleep(2)
-            if self.driver.current_url == self.usUrl:
-                break
-            Captcha(4, rsp=rsp)
+            if self.driver.current_url in self.usUrl:
+                Captcha(4, rsp=rsp)
+                continue
+            break
         else:
             print("验证码 5 次错误, 重启")
             return 1
@@ -393,6 +398,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "The Visa Number that you have entered is invalid.": "签证号码请输入签证右下角显示为红色的8位数字。 如果您以前的签证是边境检票卡，请输入机读区第一行的最后12位数字。",
             "Date of Arrival in U.S. is invalid. Month, Day, and Year are required.": "到达日期有误",
             "Date of Departure from U.S. is invalid. Month, Day, and Year are required.": "离美日期有误",
             "Phone Number accepts only numbers (0-9).": "电话只能为数字 0-9",
@@ -917,7 +923,9 @@ class AllPage(AutoUs):
                 ids = self.waitIdSel(ids)
 
         self.waitIdSel(selist=seList)
+        self.Wait(f"{self.baseID}FormView1_tbxPPT_ISSUEDYear")
         self.waitIdSel(ids)
+        
         # self.choiceSelect(sel[0], sel[1])
         self.urlButton()
         try:
@@ -1091,7 +1099,7 @@ class AllPage(AutoUs):
 
         # 州
         self.choiceSelect(f"{self.baseID}FormView1_ddlTravelState", self.resPublic['stay_province'])
-
+        sleep(1)
         self.urlButton()
         try:
             errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
@@ -1325,15 +1333,8 @@ class AllPage(AutoUs):
                      MONTH[month]),
                 ]
                 seList.append((f"{self.baseID}FormView1_ddlFathersDOBDay", day))
-            if self.resInfo["father_america_is"] == "N":
-                ids.append((f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_1", ""))
-            elif self.resInfo["father_america_is"] == "Y":
-                ids += [
-                    (f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_0", ""),
-                    (f"{self.baseID}FormView1_ddlFATHER_US_STATUS", self.resInfo["father_america_identity"])
-                ]
-        ids = self.waitIdSel(ids, seList)
-        seList = []
+        seList = self.waitIdSel(selist=seList)
+        ids = self.waitIdSel(ids)
         # 母亲
         if not (self.resInfo['mother_name'] or self.resInfo['mother_names']):
             ids += [
@@ -1355,15 +1356,27 @@ class AllPage(AutoUs):
                      MONTH[month]),
                 ]
                 seList.append((f"{self.baseID}FormView1_ddlMothersDOBDay", day))
-            if self.resInfo["mother_america_is"] == "N":
-                ids.append((f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_1", ""))
-            elif self.resInfo["mother_america_is"] == "Y":
-                ids += [
-                    (f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
-                    (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
-                ]
-        ids = self.waitIdSel(ids, seList)
-        seList = []
+
+        seList = self.waitIdSel(selist=seList)
+        ids = self.waitIdSel(ids)
+
+        # 父母是否在美国
+        if self.resInfo["father_america_is"] == "N":
+            self.driver.execute_script(f'document.getElementById("{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_1").checked = true')
+        elif self.resInfo["father_america_is"] == "Y":
+            ids += [
+                (f"{self.baseID}FormView1_rblFATHER_LIVE_IN_US_IND_0", ""),
+                (f"{self.baseID}FormView1_ddlFATHER_US_STATUS", self.resInfo["father_america_identity"])
+            ]
+        if self.resInfo["mother_america_is"] == "N":
+            self.driver.execute_script(f'document.getElementById("{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_1").checked = true')
+        elif self.resInfo["mother_america_is"] == "Y":
+            ids += [
+                (f"{self.baseID}FormView1_rblMOTHER_LIVE_IN_US_IND_0", ""),
+                (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
+            ]
+        ids = self.waitIdSel(ids)
+        
         # 其它直系亲属
         if self.resInfo["other_america_is"] == "N":
             ids.append((f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
@@ -1390,7 +1403,8 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_dlUSRelatives_ctl00_ddlUS_REL_STATUS", val["identity"]),
                 ]
 
-        self.waitIdSel(ids, seList)
+        seList = self.waitIdSel(selist=seList)
+        ids = self.waitIdSel(ids)
         self.urlButton()
         try:
             errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
@@ -1643,7 +1657,7 @@ class AllPage(AutoUs):
 
         seList += [
             # 所属日期
-            (f"{self.baseID}FormView1_ddlEmpDateFromDay", day),
+            (f"{self.baseID}FormView1_ddlEmpDateFromDay", f"{int(day)}"),
             # 所属国家
             (f"{self.baseID}FormView1_ddlEmpSchCountry", self.resWork["company_country"]),
         ]
@@ -1790,7 +1804,6 @@ class AllPage(AutoUs):
                     ids.append((f"{ferId}cbxEDUC_INST_POSTAL_CD_NA", ""))
 
         self.waitIdSel(ids, seList)
-        sleep(2)
         self.urlButton()
         try:
             errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
@@ -2143,15 +2156,20 @@ class AllPage(AutoUs):
         self.Wait(f"{self.baseID}FormView3_rblPREP_IND_1")
         self.Wait(f"{self.baseID}PPTNumTbx",
                   self.resInfo["passport_number"])
-        while "You have successfully" not in self.driver.page_source and "sign your application:" in self.driver.page_source:
+        for _ in range(5):
             try:
                 self.driver.execute_script("document.documentElement.scrollTop=910")
-                result = self.getCaptcha(f"c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
-                self.Wait(f"{self.baseID}CodeTextBox", result)
+                # result = self.getCaptcha(f"c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
+                # self.Wait(f"{self.baseID}CodeTextBox", result)
+                rsp = self.getCaptcha(f"c_general_esign_signtheapplication_ctl00_sitecontentplaceholder_defaultcaptcha_CaptchaImage")
+                self.Wait(f"{self.baseID}CodeTextBox", rsp.pred_rsp.value)
                 self.Wait(f"{self.baseID}btnSignApp")
+                sleep(2)
                 if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
+                else:
+                    Captcha(4, rsp=rsp)
             except: pass
-            sleep(2)
+            
         self.urlButton()
         self.progress("95% 最后确认页面 完成")
         return 0
