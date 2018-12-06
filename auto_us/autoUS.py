@@ -262,6 +262,7 @@ class AutoUs(Base):
     # 开始的验证
     def start_captcha(self):
         one = False
+        rsp = None
         try:
             wait = WebDriverWait(self.driver, 2, 0.2, "请求超时")
             wait.until(EC.presence_of_element_located(("id", "clntcap_frame")))
@@ -566,7 +567,7 @@ class AutoUs(Base):
             filename = f'''{self.resInfo["username"]}{self.resInfo["date_of_birth"].split("-")[0]}美国%s页_{self.AAcode if self.AAcode else self.resPublic["aacode"]}.pdf''' % dic[i]
             print(os.path.join(BASEDIR, 'usFile', filename))
             with open(os.path.join(BASEDIR, 'usFile', filename), "rb") as f:
-                files = {filename: f.read()}
+                files = {"file": f.read()}
             data = {"aid": self.resInfo["aid"], "type": i}
             res = requests.post(url, data=data, files=files)
             print(res.json())
