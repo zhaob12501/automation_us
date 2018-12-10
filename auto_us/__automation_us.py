@@ -57,7 +57,7 @@ class AutomationUS:
 
         reg = r'<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="(.*?)" />'
         previouspage = re.findall(reg, res.text)[0]
-        
+
         reg = r'<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="(.*?)" />'
         viewstategenerator = re.findall(reg, res.text)[0]
 
@@ -265,7 +265,7 @@ class AutomationUS:
         print(f'填写 个人信息表（1）完成， {ud[2]}')
         self.all_url[f'persional_2'] = res.url
         self.veri = [self.TXTCODETEXTBOX, ud[0][:5], ud[7], 'qwer', '']
-       
+
 
         viewstate, previouspage, _ = self.getParameter(res)
 
@@ -1005,7 +1005,7 @@ class AutomationUS:
             "LBD_BackWorkaround_c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha": "1",
             "__ASYNCPOST": "true",
         }
-            
+
         print('进入 填写验证信息页 ...')
         self.req.post(self.us_url, data=data1)
         recoveryUrl = 'https://ceac.state.gov/GenNIV/common/Recovery.aspx'
@@ -1095,7 +1095,7 @@ class AutomationUS:
                 return (func.__name__, )    # 出错函数之后的函数名
             elif type(res) is tuple:
                 return res
-        
+
 
 if __name__ == "__main__":
     u = AutomationUS()
@@ -1191,7 +1191,7 @@ if __name__ == "__main__":
 
     #     elif 'There was a missing or invalid parameter in the request' in res.text:
     #         print('请求中存在缺少或无效的参数')
-        
+
     #     return (self.upload.__name__, )
 
     # def Result(self, res):
@@ -1292,7 +1292,7 @@ if __name__ == "__main__":
     #     viewstate, previouspage, viewstategenerator = self.getParameter(res)
 
     #     data = {
-            
+
     #     }
 
     #     res = self.req.post(res.url, data=data)
@@ -1309,7 +1309,7 @@ if __name__ == "__main__":
     #     viewstate, previouspage, viewstategenerator = self.getParameter(res)
 
     #     data = {
-            
+
     #     }
 
     #     res = self.req.post(res.url, data=data)
@@ -1326,7 +1326,7 @@ if __name__ == "__main__":
     #     viewstate, previouspage, viewstategenerator = self.getParameter(res)
 
     #     data = {
-            
+
     #     }
 
     #     res = self.req.post(res.url, data=data)
@@ -1343,7 +1343,7 @@ if __name__ == "__main__":
     #     viewstate, previouspage, viewstategenerator = self.getParameter(res)
 
     #     data = {
-            
+
     #     }
 
     #     res = self.req.post(res.url, data=data)
@@ -1360,7 +1360,7 @@ if __name__ == "__main__":
     #     viewstate, previouspage, viewstategenerator = self.getParameter(res)
 
     #     data = {
-            
+
     #     }
 
     #     res = self.req.post(res.url, data=data)

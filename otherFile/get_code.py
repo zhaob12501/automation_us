@@ -43,7 +43,7 @@ class GetCode(AioInterface):
     url = "http://code.mcdvisa.com/save.php?action=getcode&i=1&w={}"
     code = [[f"{i*10-9+j:0>4}" for j in range(10)if i*10-9+j < 10000] for i in range(1, 1001)]
     downpath = os.path.dirname(__file__)
-    
+
     def get_code_data(self):
         for co in self.code:
             tasks = [asyncio.ensure_future(self.request(self.url.format(data))) for data in co]
@@ -55,7 +55,7 @@ class GetCode(AioInterface):
     def get_result(self, result):
         return [result.pop().result() for i in range(len(result))]
 
-        
+
     def __del__(self):
         if hasattr(self, "loop"):
             self.loop.close()

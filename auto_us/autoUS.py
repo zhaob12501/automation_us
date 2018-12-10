@@ -57,7 +57,6 @@ nodeInfo = {
     "SignCertify": "95% 最后确认页面",
 }
 
-
 class Base:
     """ 浏览器基类, 保持同一个 driver """
 
@@ -75,8 +74,9 @@ class Base:
         # self.chrome_options.add_argument('--proxy-server=http://127.0.0.1:1080')
         # 设置浏览器窗口大小
         self.chrome_options.add_argument('window-size=800x3000')
-        download_dir = os.path.join(BASEDIR, 'usFile') # for linux/*nix, download_dir="/usr/Public"
-        #----------页面打印版pdf下载-----------------
+        # for linux/*nix, download_dir="/usr/Public"
+        download_dir = os.path.join(BASEDIR, 'usFile') 
+        # ----------页面打印版pdf下载-----------------
         appState = { 
             "recentDestinations": [ 
                 { 
@@ -87,17 +87,18 @@ class Base:
             "selectedDestinationId": "Save as PDF", 
             "version": 2 
         } 
-        #----------网页版pdf直接下载-----------------
-        profile = {"plugins.plugins_list": 
-            [{"enabled": False, "name": "Chrome PDF Viewer"}], # Disable Chrome's PDF Viewer
-            "download.default_directory": download_dir , 
+        # ----------网页版pdf直接下载-----------------
+        profile = {
+            "plugins.plugins_list": [{
+                "enabled": False, "name": "Chrome PDF Viewer"
+            }],  # Disable Chrome's PDF Viewer
+            "download.default_directory": download_dir, 
             "download.extensions_to_open": "applications/pdf",
             'printing.print_preview_sticky_settings.appState': json.dumps(appState),
             'savefile.default_directory': download_dir
         }
         self.chrome_options.add_experimental_option("prefs", profile)
         self.chrome_options.add_argument('--kiosk-printing')
-        self.chrome_options.add_argument('user-agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"')
         self.driver = webdriver.Chrome(
             executable_path=self.path + 'chromedriver', chrome_options=self.chrome_options)
         # 设置隐性等待时间, timeout = 20
@@ -134,7 +135,7 @@ class Base:
         else:
             self.Wait(id, NC)
             captcha = self.driver.find_element_by_id(id)
-        
+
         self.driver.save_screenshot('captcha.png')
         captcha_left = captcha.location['x']
         top = 0 if captcha.location['y'] < 1200 else 910
@@ -176,13 +177,13 @@ class Base:
             elif text and text != NC:
                 try:
                     element.clear()
-                except:
+                except Exception:
                     pass
                 finally:
                     element.send_keys(text)
             try:
                 return element
-            except:
+            except Exception:
                 pass
         except Exception as e:
             raise UsError(f"{e}\n{locator[0]}: {locator[1]}\n" +
@@ -199,9 +200,8 @@ class Base:
         #     raise UsError(
         #         f'下拉框选择器 ID 和 value 不能为空\nselectid: {selectid}\nvalue   : {value}')
         sleep(t)
-        self.Wait(selectid, text=NC)
         try:
-            element = Select(self.driver.find_element_by_id(selectid))
+            element = Select(self.Wait(selectid, text=NC))
             element.select_by_value(value)
         except Exception as e:
             raise UsError(f"{e}\nidName: {selectid}\nvalue : {value}\n\n")
@@ -224,7 +224,6 @@ class Base:
 
     def __del__(self):
         self.driver.quit()
-
 
 class AutoUs(Base):
     """ 自动化录入程序基类
@@ -266,7 +265,7 @@ class AutoUs(Base):
         try:
             wait = WebDriverWait(self.driver, 2, 0.2, "请求超时")
             wait.until(EC.presence_of_element_located(("id", "clntcap_frame")))
-            
+
             self.driver.switch_to.frame(0)
             for _ in range(10):
                 img = wait.until(EC.presence_of_element_located(("xpath", "//img")))
@@ -282,10 +281,10 @@ class AutoUs(Base):
                 try:
                     wait.until(EC.presence_of_element_located(("id", f"{self.baseID}ucLocation_ddlLocation")))
                     break
-                except:
+                except Exception:
                     pass
                 one = True
-        except:
+        except Exception:
             pass
 
     # 开始一个新的签证
@@ -305,7 +304,7 @@ class AutoUs(Base):
         else:
             self.errJson([], '领区未选')
         # self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", 'BEJ')
-        #　识别验证码
+        # 识别验证码
         for _ in range(5):
             try:
                 # result = self.getCaptcha('c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
@@ -314,7 +313,7 @@ class AutoUs(Base):
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', rsp.pred_rsp.value)
                 sleep(1)
                 self.Wait(f'{self.baseID}lnkNew')
-            except:
+            except Exception:
                 pass
             sleep(2)
             if self.driver.current_url in self.usUrl:
@@ -324,7 +323,6 @@ class AutoUs(Base):
         else:
             print("验证码 5 次错误, 重启")
             return 1
-            
 
         self.Wait(f"{self.baseID}txtAnswer", self.answer)
         self.Wait(f"{self.baseID}btnContinue")
@@ -345,7 +343,7 @@ class AutoUs(Base):
             self.choiceSelect(f"{self.baseID}ucLocation_ddlLocation", self.resInfo['activity'])
         else:
             self.errJson([], '领区未选')
-        
+
         for _ in range(5):
             try:
                 # result = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
@@ -353,8 +351,10 @@ class AutoUs(Base):
                 rsp = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', rsp.pred_rsp.value)
                 self.Wait(f'{self.baseID}lnkRetrieve')
-                if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": break
-            except: pass
+                if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": 
+                    break
+            except Exception: 
+                pass
             sleep(2)
             if self.driver.current_url in self.usUrl:
                 Captcha(4, rsp=rsp)
@@ -363,7 +363,7 @@ class AutoUs(Base):
         else:
             print("验证码 5 次错误, 重启")
             return 1
-            
+
         self.Wait(f"{self.baseID}ApplicationRecovery1_tbxApplicationID", self.resPublic['aacode'])
 
         ids = [
@@ -383,9 +383,9 @@ class AutoUs(Base):
                 self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_pnlSubmittedApp", text=NC)
                 self.usPipe.upload(self.resPublic["aid"], status="4")
                 return 1
-            except:
+            except Exception:
                 pass
-        
+
         if noback:
             self.Wait(f"{self.baseID}UpdateButton3")
         else:
@@ -404,10 +404,16 @@ class AutoUs(Base):
             "Date of Departure from U.S. is invalid. Month, Day, and Year are required.": "离美日期有误",
             "Phone Number accepts only numbers (0-9).": "电话只能为数字 0-9",
             "Primary Phone Number accepts only numbers (0-9).": "主要电话只能为数字 0-9",
-            "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe ('), ampersand (&) and single spaces in between names.": "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
+
+            "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), "
+            "apostrophe ('), ampersand (&) and single spaces in between names.": 
+            "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
+
             "Primary Phone Number has not been completed.": "主要电话未填",
             "Alias matches Given Name.": "曾用名有误",
-            "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
+            "National Identification Number is invalid. Only the following characters are valid for this field: A-Z, 0-9 and single "
+            "spaces in between letters/numbers.": "身份证号码只能为 A-Z, 0-9 和单个空格",
+
             "Surnames has not been completed.": "姓氏未填",
             "Given Names has not been completed.": "名字未填",
             "Full Name in Native Alphabet has not been completed.": "原名未填",
@@ -532,7 +538,7 @@ class AutoUs(Base):
         #     self.usPipe.upload(self.resPublic['aid'], conditions=self.resPublic["conditions"]+1, ques=err)
         # elif self.resPublic["conditions"] > 0:
         #     self.usPipe.upload(self.resPublic['aid'], conditions=0)
-    
+
     # 进度条
     def progress(self, info):
         self.usPipe.upload(self.resPublic["aid"], progress=info)
@@ -578,7 +584,7 @@ class AutoUs(Base):
             for infile in glob.glob(os.path.join(BASEDIR, 'usFile\\*.pdf')):
                 if "AppointmentConfirmation" in infile: continue
                 os.remove(infile)
-        except:
+        except Exception:
             pass        
         return 0
 
@@ -590,7 +596,6 @@ class AutoUs(Base):
             return re.sub(r"[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
         else:
             return re.sub(r"[^0-9]+", "", s)
-
 
 class AllPage(AutoUs):
     """ 逻辑 """
@@ -642,7 +647,7 @@ class AllPage(AutoUs):
             if self.getNode == 'SignCertify':
                 self.usPipe.upload(self.resPublic["aid"], visa_status="1")
             return 0
-        except:
+        except Exception:
             self.errJson(["信息有误"], nodeInfo[self.getNode])
 
     # ================== #
@@ -711,7 +716,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '个人信息一:')
             return 1
-        except:
+        except Exception:
             pass
         self.progress("5% 个人信息1 完成")
         return 0
@@ -782,7 +787,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '个人信息二:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("10% 个人信息2 完成")
@@ -864,7 +869,7 @@ class AllPage(AutoUs):
                 else:
                     self.errJson(errInfos, '地址和电话:')
                     return 1
-            except:
+            except Exception:
                 break
 
         self.progress("15% 地址和电话页 完成")
@@ -926,7 +931,7 @@ class AllPage(AutoUs):
         self.waitIdSel(selist=seList)
         self.Wait(f"{self.baseID}FormView1_tbxPPT_ISSUEDYear")
         self.waitIdSel(ids)
-        
+
         # self.choiceSelect(sel[0], sel[1])
         self.urlButton()
         try:
@@ -934,7 +939,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '护照:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("20% 护照页 完成" )
@@ -966,7 +971,7 @@ class AllPage(AutoUs):
             year, mon, day = self.resPublic['arrive_time'].split('-')
             try:
                 self.driver.find_element_by_id(f"{self.baseID}FormView1_rblSpecificTravel_1").click()
-            except:
+            except Exception:
                 pass
             ids = [
                 (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
@@ -974,7 +979,7 @@ class AllPage(AutoUs):
                 (f"{self.baseID}FormView1_tbxTRAVEL_LOS", self.resPublic['stay_time']),
             ]
             ids = self.waitIdSel(ids)
-                
+
             self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_DTEDay", f"{int(day)}")
             self.choiceSelect(f"{self.baseID}FormView1_ddlTRAVEL_LOS_CD", self.resPublic['stay_times'])
 
@@ -1005,7 +1010,7 @@ class AllPage(AutoUs):
             try:
                 ids = self.waitIdSel(ids, seList)
                 seList = []
-            except:
+            except Exception:
                 year, mon, day = self.resPublic['arrive_time'].split('-')
                 ids = [
                     (f"{self.baseID}FormView1_tbxTRAVEL_DTEYear", year),
@@ -1026,7 +1031,7 @@ class AllPage(AutoUs):
         ids = self.waitIdSel(ids)
         if self.resPublic['travel_cost_pay'] == 'O':
             try: self.Wait(f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name'])
-            except: 
+            except Exception: 
                 sel.select_by_index(0)
                 sel.select_by_value(self.resPublic['travel_cost_pay'])
                 ids.append((f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']))
@@ -1107,7 +1112,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '旅行:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("25% 旅行页 完成")
@@ -1142,7 +1147,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '同行人:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("30% 旅行同伴页 完成")
@@ -1254,7 +1259,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '以往赴美:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("35% 以前美国之行 完成")
@@ -1301,7 +1306,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '美国联系人信息:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("40% 美国联系人信息 完成")
@@ -1377,7 +1382,7 @@ class AllPage(AutoUs):
                 (f"{self.baseID}FormView1_ddlMOTHER_US_STATUS", self.resInfo["mother_america_identity"])
             ]
         ids = self.waitIdSel(ids)
-        
+
         # 其它直系亲属
         if self.resInfo["other_america_is"] == "N":
             ids.append((f"{self.baseID}FormView1_rblUS_IMMED_RELATIVE_IND_1", ""))
@@ -1412,7 +1417,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/亲属:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("45% 家庭/亲属页 完成")
@@ -1501,7 +1506,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/配偶:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("50% 配偶页 完成")
@@ -1532,7 +1537,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '家庭/配偶「丧偶」:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("50% 丧偶页 完成")
@@ -1541,11 +1546,14 @@ class AllPage(AutoUs):
 
     def prevSpouse(self):
         ''' 离异 '''
+        info = json.loads(self.resInfo["spouse_former_info"])
         print("离异人数", self.resInfo["spouse_former_count"])
         self.Wait(f"{self.baseID}FormView1_tbxNumberOfPrevSpouses", str(
             self.resInfo["spouse_former_count"]))
+        self.Wait(f"{self.baseID}FormView1_DListSpouse_ctl00_tbxSURNAME", info[0]["former_name"])
+        self.Wait(f"{self.baseID}FormView1_DListSpouse_ctl00_tbxGIVEN_NAME", info[0]["former_names"])
         sleep(2)
-        for no, human in enumerate(json.loads(self.resInfo["spouse_former_info"])):
+        for no, human in enumerate(info):
             idName = f"{self.baseID}FormView1_DListSpouse_ctl0{no}_"
             if no and self.old_page:
                 self.Wait(f"{idName}InsertButtonSpouse", "")
@@ -1554,18 +1562,15 @@ class AllPage(AutoUs):
             dYear, dMonth, dDay = human["divorce_date"].split("-")
             self.Wait(f"{idName}tbxSURNAME", human["former_name"])
             self.Wait(f"{idName}tbxGIVEN_NAME", human["former_names"])
-            try:
-                self.choiceSelect(f"{idName}ddlDOBDay", day)
-                self.Wait(f"{idName}tbxDOBYear", year)
-                self.Wait(f"{idName}ddlDOBMonth", MONTH[month])
-                self.choiceSelect(f"{idName}ddlDomDay", wDay)
-                self.Wait(f"{idName}txtDomYear", wYear)
-                self.Wait(f"{idName}ddlDomMonth", MONTH[wMonth])
-                self.choiceSelect(f"{idName}ddlDomEndDay", dDay)
-                self.Wait(f"{idName}txtDomEndYear", dYear)
-                self.Wait(f"{idName}ddlDomEndMonth", MONTH[dMonth])
-            except:
-                pass
+            self.choiceSelect(f"{idName}ddlDOBDay", day)
+            self.Wait(f"{idName}tbxDOBYear", year)
+            self.Wait(f"{idName}ddlDOBMonth", MONTH[month])
+            self.choiceSelect(f"{idName}ddlDomDay", str(int(wDay)))
+            self.Wait(f"{idName}txtDomYear", wYear)
+            self.Wait(f"{idName}ddlDomMonth", MONTH[wMonth])
+            self.choiceSelect(f"{idName}ddlDomEndDay", str(int(dDay)))
+            self.Wait(f"{idName}txtDomEndYear", dYear)
+            self.Wait(f"{idName}ddlDomEndMonth", MONTH[dMonth])
             self.Wait(f"{idName}tbxHowMarriageEnded", human["divorce_info"])
             if human["former_city"]:
                 self.Wait(f"{idName}tbxSpousePOBCity", human["former_city"])
@@ -1574,8 +1579,6 @@ class AllPage(AutoUs):
             self.choiceSelect(f"{idName}ddlSpouseNatDropDownList", human["former_country"])
             self.choiceSelect(f"{idName}ddlSpousePOBCountry", human["former_birth_country"])
             self.choiceSelect(f"{idName}ddlMarriageEnded_CNTRY", human["divorce_country"])
-        
-
 
         self.urlButton()
         try:
@@ -1583,7 +1586,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '离异:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("50% 离异页 完成")
@@ -1609,7 +1612,7 @@ class AllPage(AutoUs):
                 assert len(errInfos) > 1
                 self.errJson(errInfos, '工作教育:')
                 return 1
-            except:
+            except Exception:
                 pass
 
             return 0
@@ -1622,7 +1625,7 @@ class AllPage(AutoUs):
             # 当前工作单位或学校的名称
             (f"{self.baseID}FormView1_tbxEmpSchName", self.cos(self.resWork["company_name"])),
             # 街道地址（第一行）
-            (f"{self.baseID}FormView1_tbxEmpSchAddr1", self.resWork["company_address"][:40]),
+            (f"{self.baseID}FormView1_tbxEmpSchAddr1", self.resWork["company_address"].strip()[:40]),
             # 街道地址（第二行）
             (f"{self.baseID}FormView1_tbxEmpSchAddr2", self.resWork["company_address"][40:]),
             # 城市
@@ -1636,7 +1639,6 @@ class AllPage(AutoUs):
             # 请简要描述您的工作职责：
             (f"{self.baseID}FormView1_tbxDescribeDuties", self.resWork["responsibility"]),
         ]
-
 
         # 州/省份
         if self.resWork["company_province"]:
@@ -1671,7 +1673,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '工作教育:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("55% 工作教育 完成")
@@ -1696,7 +1698,7 @@ class AllPage(AutoUs):
                 try:
                     sYear, sMonth, sDay = work["induction_time"].split("-")
                     eYear, eMonth, eDay = work["departure_time"].split("-")
-                except:
+                except Exception:
                     self.errJson(["", "工作开始时间或结束时间未正确填写"], '以前的工作:')
                     return 1
                 ids += [
@@ -1769,7 +1771,7 @@ class AllPage(AutoUs):
                     # 学校名称
                     (f"{ferId}tbxSchoolName", self.cos(school["name"])),
                     # 地址
-                    (f"{ferId}tbxSchoolAddr1", school["address"][:40]),
+                    (f"{ferId}tbxSchoolAddr1", school["address"].strip()[:40]),
                     # 地址2
                     (f"{ferId}tbxSchoolAddr2", school["address"][40:]),
                     # 城市
@@ -1811,7 +1813,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '以前的工作:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("60% 以前的工作/培训页 完成")
@@ -1920,7 +1922,7 @@ class AllPage(AutoUs):
             assert len(errInfos) > 1
             self.errJson(errInfos, '补充页:')
             return 1
-        except:
+        except Exception:
             pass
 
         self.progress("65% 补充页 完成")
@@ -1948,7 +1950,7 @@ class AllPage(AutoUs):
         sec3 = self.get_sec(f"status3", "Druguser")
 
         ids1 = sec1 + sec2 + sec3
-        
+
         sec4 = self.get_sec(f"status4", "Arrested")
         sec5 = self.get_sec(f"status5", "ControlledSubstances")
         sec6 = self.get_sec(f"status6", "Prostitution")
@@ -1972,12 +1974,11 @@ class AllPage(AutoUs):
         sec21 = self.get_sec(f"status21", "Transplant")
 
         ids3 = sec11 + sec12 + sec13 + sec14 + sec15 + sec16 + sec17 + sec18 + sec19 + sec20 + sec21
-        
         sec22 = self.get_sec(f"status22", "ImmigrationFraud")
         sec26 = self.get_sec(f"status26", "RemovalHearing")
         sec27 = self.get_sec(f"status27", "FailToAttend")
         sec28 = self.get_sec(f"status28", "VisaViolation")
-        
+
         ids4 = sec22 + sec26 + sec27 + sec28
 
         sec23 = self.get_sec(f"status23", "ChildCustody")
@@ -1987,100 +1988,100 @@ class AllPage(AutoUs):
 
         ids5 = sec23 + sec24 + sec25 + sec29
         # ids1 = [
-            # (f"{self.baseID}FormView1_rblDisease_1", ""),
-            # # (f"{self.baseID}FormView1_rblDisease_0", ""),
-            # # (f"{self.baseID}FormView1_tbxDisease", "")            
-            # (f"{self.baseID}FormView1_rblDisorder_1", ""),
-            # # (f"{self.baseID}FormView1_rblDisorder_0", ""),
-            # # (f"{self.baseID}FormView1_tbxDisorder", "")            
-            # (f"{self.baseID}FormView1_rblDruguser_1", ""),
-            # # (f"{self.baseID}FormView1_rblDruguser_0", ""),
-            # # (f"{self.baseID}FormView1_tbxDruguser", "")            
-            # (f"{self.baseID}UpdateButton3", ""),
+        #     (f"{self.baseID}FormView1_rblDisease_1", ""),
+        #     # (f"{self.baseID}FormView1_rblDisease_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxDisease", "")            
+        #     (f"{self.baseID}FormView1_rblDisorder_1", ""),
+        #     # (f"{self.baseID}FormView1_rblDisorder_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxDisorder", "")            
+        #     (f"{self.baseID}FormView1_rblDruguser_1", ""),
+        #     # (f"{self.baseID}FormView1_rblDruguser_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxDruguser", "")            
+        #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids2 = [
-            # (f"{self.baseID}FormView1_rblArrested_1", ""),
-            # # (f"{self.baseID}FormView1_rblArrested_0", ""),
-            # # (f"{self.baseID}FormView1_tbxArrested", "")            
-            # (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
-            # # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),
-            # # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
-            # (f"{self.baseID}FormView1_rblProstitution_1", ""),
-            # # (f"{self.baseID}FormView1_rblProstitution_0", ""),
-            # # (f"{self.baseID}FormView1_tbxProstitution", "")            
-            # (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
-            # # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),
-            # # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
-            # (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
-            # # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),
-            # # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
-            # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
-            # # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),
-            # # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
-            # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
-            # # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),
-            # # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
-            # (f"{self.baseID}UpdateButton3", ""),
+        #     (f"{self.baseID}FormView1_rblArrested_1", ""),
+        #     # (f"{self.baseID}FormView1_rblArrested_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxArrested", "")            
+        #     (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
+        #     # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
+        #     (f"{self.baseID}FormView1_rblProstitution_1", ""),
+        #     # (f"{self.baseID}FormView1_rblProstitution_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxProstitution", "")            
+        #     (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
+        #     # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
+        #     (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
+        #     # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
+        #     (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
+        #     # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
+        #     (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
+        #     # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
+        #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids3 = [
-            # (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
-            # # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),
-            # # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
-            # (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
-            # # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),
-            # # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
-            # (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
-            # # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),
-            # # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
-            # (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
-            # # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),
-            # # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
-            # (f"{self.baseID}FormView1_rblGenocide_1", ""),
-            # # (f"{self.baseID}FormView1_rblGenocide_0", ""),
-            # # (f"{self.baseID}FormView1_tbxGenocide", "")            
-            # (f"{self.baseID}FormView1_rblTorture_1", ""),
-            # # (f"{self.baseID}FormView1_rblTorture_0", ""),
-            # # (f"{self.baseID}FormView1_tbxTorture", "")            
-            # (f"{self.baseID}FormView1_rblExViolence_1", ""),
-            # # (f"{self.baseID}FormView1_rblExViolence_0", ""),
-            # # (f"{self.baseID}FormView1_tbxExViolence", "")            
-            # (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
-            # # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),
-            # # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
-            # (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
-            # # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),
-            # # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
-            # (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
-            # # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),
-            # # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
-            # (f"{self.baseID}FormView1_rblTransplant_1", ""),
-            # # (f"{self.baseID}FormView1_rblTransplant_0", ""),
-            # # (f"{self.baseID}FormView1_tbxTransplant", "")            
-            # (f"{self.baseID}UpdateButton3", ""),
+        #     (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
+        #     # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
+        #     (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
+        #     # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
+        #     (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
+        #     # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
+        #     (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
+        #     # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
+        #     (f"{self.baseID}FormView1_rblGenocide_1", ""),
+        #     # (f"{self.baseID}FormView1_rblGenocide_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxGenocide", "")            
+        #     (f"{self.baseID}FormView1_rblTorture_1", ""),
+        #     # (f"{self.baseID}FormView1_rblTorture_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxTorture", "")            
+        #     (f"{self.baseID}FormView1_rblExViolence_1", ""),
+        #     # (f"{self.baseID}FormView1_rblExViolence_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxExViolence", "")            
+        #     (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
+        #     # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
+        #     (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
+        #     # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
+        #     (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
+        #     # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
+        #     (f"{self.baseID}FormView1_rblTransplant_1", ""),
+        #     # (f"{self.baseID}FormView1_rblTransplant_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxTransplant", "")            
+        #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids4 = [
-            # (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
-            # # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),
-            # # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
-            # (f"{self.baseID}UpdateButton3", ""),
+        #     (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
+        #     # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
+        #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids5 = [
-            # (f"{self.baseID}FormView1_rblChildCustody_1", ""),
-            # # (f"{self.baseID}FormView1_rblChildCustody_0", ""),
-            # # (f"{self.baseID}FormView1_tbxChildCustody", "")            
-            # (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
-            # # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),
-            # # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
-            # (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
-            # # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),
-            # # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
-            # (f"{self.baseID}UpdateButton3", ""),
+        #     (f"{self.baseID}FormView1_rblChildCustody_1", ""),
+        #     # (f"{self.baseID}FormView1_rblChildCustody_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxChildCustody", "")            
+        #     (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
+        #     # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
+        #     (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
+        #     # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),
+        #     # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
+        #     (f"{self.baseID}UpdateButton3", ""),
         # ]
-        
+
         idsDic = {
             "SecurityandBackground1": ids1,
             "SecurityandBackground2": ids2,
@@ -2092,10 +2093,10 @@ class AllPage(AutoUs):
         for i in range(int(node[-1]), 6):
             try:
                 self.waitIdSel(idsDic[node[:-1] + str(i)])
-            except:
+            except Exception:
                 pass
             self.urlButton()
-        
+
         self.progress("70% 安全与背景页 完成")
 
         return 0
@@ -2120,7 +2121,6 @@ class AllPage(AutoUs):
                 print("照片上传失败")
                 self.errJson([''], '照片上传失败:')
                 return 1
-            
 
         info2 = self.driver.find_element("id", "ctl00_cphMain_qualityCheckOutcome").text
 
@@ -2169,8 +2169,8 @@ class AllPage(AutoUs):
                 if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
                 else:
                     Captcha(4, rsp=rsp)
-            except: pass
-            
+            except Exception: pass
+
         self.urlButton()
         self.progress("95% 最后确认页面 完成")
         return 0

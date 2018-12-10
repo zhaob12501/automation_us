@@ -213,7 +213,7 @@ class UsPipeline(Mysql):
         # 线上使用条件
         sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
         # 测试使用条件
-        sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 113"
+        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 113"
         self.cur.execute(sql)
         resPublic = self.cur.fetchone()
         if not resPublic:
@@ -272,7 +272,7 @@ class UsPipeline(Mysql):
         sql = "SELECT * FROM dc_business_america_order WHERE interview_status=4 or python_status=1"
         sql = sql if not usql else usql
         # 测试
-        # sql = "SELECT * FROM dc_business_america_order WHERE id=74"
+        sql = "SELECT * FROM dc_business_america_order WHERE id=82"
         self.cur.execute(sql)
         res = self.cur.fetchone()
         if res:
@@ -346,7 +346,7 @@ class UsPipeline(Mysql):
                 self.cur.close()
             if self._conn:
                 self._conn.close()
-            
+
         except:
             pass
 

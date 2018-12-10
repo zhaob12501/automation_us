@@ -306,7 +306,7 @@ def Captcha(operating=1, img_data=None,  path=None, rsp=None, pred_type="3060050
         path        : 图片文件路径
         rsp         : 出错验证码对象
         pred_type   : 验证码类型
-        
+
     返回值: rsp
         rsp.ret_code        ：正常返回0
         rsp.request_id      ：唯一订单号
