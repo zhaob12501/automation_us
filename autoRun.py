@@ -1,14 +1,14 @@
 # coding: utf-8
 """
-@Author: ZhaoBin 
-@Date: 2018-08-05 13:30:41 
-@Last Modified by:   ZhaoBin 
-@Last Modified time: 2018-08-08 17:00:41 
+@Author: ZhaoBin
+@Date: 2018-08-05 13:30:41
+@Last Modified by:   ZhaoBin
+@Last Modified time: 2018-08-08 17:00:41
 """
 from time import time
 
 from auto_us import AllPage, UsPipeline
-from auto_us.settings import UsError, json, os, sleep, strftime, sys
+from auto_us.settings import UsError, os, sleep, strftime
 
 st = 0
 
@@ -104,7 +104,7 @@ class UsRun:
             self.auto = None
             try:
                 self.au.driver.quit()
-            except:
+            except Exception:
                 pass
 
             self.au = None

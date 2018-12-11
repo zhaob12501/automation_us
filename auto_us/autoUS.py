@@ -10,19 +10,15 @@ import glob
 import re
 
 import requests
-from lxml import etree
 from PIL import Image
 
-import selenium
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from .fateadm import Captcha
-from .settings import (BASEDIR, MON, MONTH, NC, PASSWD, USER, USERPHOTO,
-                       UsError, json, os, sleep, strftime, sys)
-from .yunsu import upload
+from .settings import (BASEDIR, MONTH, NC, UsError, json, os, sleep, sys)
 
 nodeInfo = {
     "Personal1": "5% 个人信息1",
@@ -56,6 +52,7 @@ nodeInfo = {
     "ReviewLocation": "90% 审查页面",
     "SignCertify": "95% 最后确认页面",
 }
+
 
 class Base:
     """ 浏览器基类, 保持同一个 driver """
@@ -224,6 +221,7 @@ class Base:
 
     def __del__(self):
         self.driver.quit()
+
 
 class AutoUs(Base):
     """ 自动化录入程序基类
@@ -399,6 +397,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "ZIP Code is invalid. Verify the format is correct.": "邮编无效",
             "The Visa Number that you have entered is invalid.": "签证号码请输入签证右下角显示为红色的8位数字。 如果您以前的签证是边境检票卡，请输入机读区第一行的最后12位数字。",
             "Date of Arrival in U.S. is invalid. Month, Day, and Year are required.": "到达日期有误",
             "Date of Departure from U.S. is invalid. Month, Day, and Year are required.": "离美日期有误",
@@ -582,7 +581,8 @@ class AutoUs(Base):
         self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
         try:
             for infile in glob.glob(os.path.join(BASEDIR, 'usFile\\*.pdf')):
-                if "AppointmentConfirmation" in infile: continue
+                if "AppointmentConfirmation" in infile: 
+                    continue
                 os.remove(infile)
         except Exception:
             pass        
@@ -596,6 +596,7 @@ class AutoUs(Base):
             return re.sub(r"[^A-Z0-9&\-'\s]|\s[\s]+", lambda x: "" if len(x.group()) == 1 else " ", s.upper())
         else:
             return re.sub(r"[^0-9]+", "", s)
+
 
 class AllPage(AutoUs):
     """ 逻辑 """
@@ -736,7 +737,7 @@ class AllPage(AutoUs):
                     self.resInfo["english_name"][:5], 
                     self.resInfo['date_of_birth'].split('-')[0], 
                     self.answer
-                    ]
+                ]
                 json.dump(veri, f)
         self.usPipe.upload(self.resPublic['aid'], aacode=self.AAcode)
 
@@ -855,20 +856,15 @@ class AllPage(AutoUs):
             ids.append((f"{self.baseID}FormView1_cbexAPP_BUS_TEL_NA", ""))
 
         self.waitIdSel(idlist=ids, selist=seList)
-        self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", self.resInfo['home_email'])
+        self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", re.sub(r"[。、]", ".", self.resInfo['home_email']))
         self.urlButton()
 
         while True:
             try:
                 errInfos = self.driver.find_element_by_id(f"{self.baseID}FormView1_ValidationSummary").text.split('\n')
                 assert len(errInfos) > 1
-                if "Email Address is invalid. Verify the format is correct." == errInfos[1]:
-                    self.driver.find_element("id", f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR").clear()
-                    self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", self.resInfo['home_email'])
-                    self.Wait(f"{self.baseID}UpdateButton3")
-                else:
-                    self.errJson(errInfos, '地址和电话:')
-                    return 1
+                self.errJson(errInfos, '地址和电话:')
+                return 1
             except Exception:
                 break
 
@@ -879,6 +875,10 @@ class AllPage(AutoUs):
     def pptVisa(self):
         """ 护照页 """
         print("护照")
+        self.choiceSelect(f"{self.baseID}FormView1_ddlPPT_TYPE", self.resInfo['passport_category'])
+        if self.resInfo['passport_category'] == "T":
+            self.Wait(f"{self.baseID}FormView1_tbxPptOtherExpl", self.resInfo["passport_category_info"])
+        sleep(2)
         ids = []
         seList = []
         # 护照本编号「默认不填」
@@ -887,12 +887,12 @@ class AllPage(AutoUs):
         else:
             ids.append(
                 (f"{self.baseID}FormView1_cbexPPT_BOOK_NUM_NA", ""))
-
+        ids = self.waitIdSel(ids)
         iYear, iMon, iDay = self.resInfo['lssue_date'].split('-')
         eYear, eMon, eDay = self.resInfo['expiration_date'].split('-')
         print(eYear, eMon, eDay)
         ids += [
-            #　护照类型/护照号
+            # 护照类型/护照号
             (f"{self.baseID}FormView1_tbxPPT_NUM", self.cos(self.resInfo['passport_number'])),
             # (f"{self.baseID}FormView1_cbexPPT_BOOK_NUM_NA", ""),
             # 护照签发城市
@@ -900,7 +900,6 @@ class AllPage(AutoUs):
             # 护照签发省
             (f"{self.baseID}FormView1_tbxPPT_ISSUED_IN_STATE", self.resInfo['place_issue_province']),
             # 护照 签发日期
-            (f"{self.baseID}FormView1_ddlPPT_TYPE", self.resInfo['passport_category']),
             (f"{self.baseID}FormView1_tbxPPT_ISSUEDYear", iYear),
             (f"{self.baseID}FormView1_ddlPPT_ISSUED_DTEMonth", MONTH[iMon]),
             # 护照 失效日期
@@ -942,7 +941,7 @@ class AllPage(AutoUs):
         except Exception:
             pass
 
-        self.progress("20% 护照页 完成" )
+        self.progress("20% 护照页 完成")
 
         return 0
 
@@ -1030,8 +1029,9 @@ class AllPage(AutoUs):
         ]
         ids = self.waitIdSel(ids)
         if self.resPublic['travel_cost_pay'] == 'O':
-            try: self.Wait(f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name'])
-            except Exception: 
+            try: 
+                self.Wait(f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name'])
+            except Exception:
                 sel.select_by_index(0)
                 sel.select_by_value(self.resPublic['travel_cost_pay'])
                 ids.append((f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name']))
@@ -1060,11 +1060,11 @@ class AllPage(AutoUs):
                     (f"{self.baseID}FormView1_tbxPayerCity", self.resPublic['pay_personal_city']),
                 ]
                 if self.resPublic['pay_personal_province']:
-                    ids.append((f"{self.baseID}FormView1_tbxPayerStateProvince",self.resPublic['pay_personal_province']))
+                    ids.append((f"{self.baseID}FormView1_tbxPayerStateProvince", self.resPublic['pay_personal_province']))
                 else:
                     ids.append((f"{self.baseID}FormView1_cbxDNAPayerStateProvince", ""))
                 if self.resPublic['pay_personal_zip']:
-                    ids.append((f"{self.baseID}FormView1_tbxPayerPostalZIPCode",self.resPublic['pay_personal_zip']))
+                    ids.append((f"{self.baseID}FormView1_tbxPayerPostalZIPCode", self.resPublic['pay_personal_zip']))
                 else:
                     ids.append((f"{self.baseID}FormView1_cbxDNAPayerPostalZIPCode", ""))
 
@@ -1186,10 +1186,10 @@ class AllPage(AutoUs):
                     if index and self.old_page:
                         self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index-1}_InsertButtonUS_DRIVER_LICENSE")
                     if "驾照号":
-                        self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_tbxUS_DRIVER_LICENSE", value["驾照号"]) # 驾照号
+                        self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_tbxUS_DRIVER_LICENSE", value["驾照号"])  # 驾照号
                     else:
                         self.Wait(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_cbxUS_DRIVER_LICENSE_NA")
-                    self.choiceSelect(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_ddlUS_DRIVER_LICENSE_STATE", value["驾照所属州"]) # 驾照所属州
+                    self.choiceSelect(f"{self.baseID}FormView1_dtlUS_DRIVER_LICENSE_ctl0{index}_ddlUS_DRIVER_LICENSE_STATE", value["驾照所属州"])  # 驾照所属州
 
         # 您是否曾经获得过美国签证?
         if self.resPublic["old_visa_is"] == 'N':
@@ -1906,7 +1906,7 @@ class AllPage(AutoUs):
                 ]
                 ids = self.waitIdSel(ids, seList)
                 # 服役国家
-                self.choiceSelect(f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_CNTRY",  value["country"])
+                self.choiceSelect(f"{self.baseID}FormView1_dtlMILITARY_SERVICE_ctl0{index}_ddlMILITARY_SVC_CNTRY", value["country"])
 
         # 你是否曾经服务于或参与过准军事性单位、治安团体、造反组织、游击队或暴动组织，或曾经是其成员之一？
         if self.resWork["military_unit_is"] == "N":
@@ -2166,10 +2166,12 @@ class AllPage(AutoUs):
                 self.Wait(f"{self.baseID}CodeTextBox", rsp.pred_rsp.value)
                 self.Wait(f"{self.baseID}btnSignApp")
                 sleep(2)
-                if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: break
+                if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: 
+                    break
                 else:
                     Captcha(4, rsp=rsp)
-            except Exception: pass
+            except Exception: 
+                pass
 
         self.urlButton()
         self.progress("95% 最后确认页面 完成")

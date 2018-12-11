@@ -272,7 +272,7 @@ class UsPipeline(Mysql):
         sql = "SELECT * FROM dc_business_america_order WHERE interview_status=4 or python_status=1"
         sql = sql if not usql else usql
         # 测试
-        sql = "SELECT * FROM dc_business_america_order WHERE id=82"
+        # sql = "SELECT * FROM dc_business_america_order WHERE id=82"
         self.cur.execute(sql)
         res = self.cur.fetchone()
         if res:
