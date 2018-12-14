@@ -742,19 +742,35 @@ class AllPage(AutoUs):
         self.usPipe.upload(self.resPublic['aid'], aacode=self.AAcode)
 
         ids = []
+        seList = []
 
         # 判断是否拥有其它国籍
+        # [{"country":"","passport_is":"Y","passport_number":"123"}]
         if self.resInfo['nationality_other_is'] == 'N':
             ids.append((f"{self.baseID}FormView1_rblAPP_OTH_NATL_IND_1", ""))
         elif self.resInfo['nationality_other_is'] == 'Y':
-            raise UsError("有其他国籍")
+            ids.append((f"{self.baseID}FormView1_rblAPP_OTH_NATL_IND_0", ""))
+            citizenship = json.loads(self.resInfo["nationality_other_info"])
+            for index, val in enumerate(citizenship):
+                if index:
+                    ids.append((f"{self.baseID}FormView1_dtlOTHER_NATL_ctl0{index - 1}_InsertButtonOTHER_NATL", ""))
+                seList.append((f"{self.baseID}FormView1_dtlOTHER_NATL_ctl0{index}_ddlOTHER_NATL", val["country"]))
+                if val.get("passport_is"):
+                    ids.append((f"{self.baseID}FormView1_dtlOTHER_NATL_ctl0{index - 1}_rblOTHER_PPT_IND_0", ""))
+                    ids.append((f"{self.baseID}FormView1_dtlOTHER_NATL_ctl0{index - 1}_tbxOTHER_PPT_NUM", val["passport_number"]))
+                else:
+                    ids.append((f"{self.baseID}FormView1_dtlOTHER_NATL_ctl0{index - 1}_rblOTHER_PPT_IND_1", ""))
 
         # 判断是否持有其它国家的永久居住权身份
+        # [{"country":"CHIN"},{"country":"VANU"}]
         if self.resInfo['nationality_live_is'] == 'N':
             ids.append((f"{self.baseID}FormView1_rblPermResOtherCntryInd_1", ""))
         elif self.resInfo['nationality_live_is'] == 'Y':
-            raise UsError("持有其它国家的永久居住权身份")
-
+            ids.append((f"{self.baseID}FormView1_rblPermResOtherCntryInd_0", ""))
+            for index, val in enumerate(json.loads(self.resInfo["nationality_live"])):
+                if index:
+                    ids.append((f"{self.baseID}FormView1_dtlOthPermResCntry_ctl0{index - 1}_InsertButtonOTHER_PERM_RES", ""))
+                seList.append((f"{self.baseID}FormView1_dtlOthPermResCntry_ctl0{index}_ddlOthPermResCntry", val["country"]))
         # 身份证号
         if self.resInfo['identity_number']:
             ids.append((f"{self.baseID}FormView1_tbxAPP_NATIONAL_ID", self.resInfo['identity_number']))
@@ -779,7 +795,7 @@ class AllPage(AutoUs):
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_TAX_ID_NA", ""))
 
-        self.waitIdSel(idlist=ids)
+        self.waitIdSel(idlist=ids, seList=seList)
 
         self.urlButton()
 

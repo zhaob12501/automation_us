@@ -1,15 +1,13 @@
 import json
-import os
 import re
-from time import mktime, sleep, strftime, strptime, time
+from time import mktime, sleep, strptime, time
 
 import requests
 from PIL import Image
 
-from .autoUS import EC, AutoUs, Select, WebDriverWait, webdriver
+from .autoUS import EC, AutoUs, Select, WebDriverWait
 from .fateadm import Captcha
-from .settings import (APPDAYS, BASEDIR, MON, MON_ANTI, NC, PASSWD, USER,
-                       UsError)
+from .settings import MON, MON_ANTI, NC, PASSWD
 
 
 class AutoPay(AutoUs):
@@ -608,8 +606,10 @@ class AutoPay(AutoUs):
     def groupAppointment(self):
         if self.groupLogin():
             return 1
-        self.Wait(
-            css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
+        if self.selApp(self.res["replace"]):
+            return
+        # self.Wait(
+        #     css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(1) > a')
         # 中间操作
         self.middle()
         if self.add_user():
@@ -759,6 +759,12 @@ class AutoPay(AutoUs):
     def mail(self):
         # 指定护照/文件送达地址
         print("指定护照/文件送达地址")
+        for pub in self.all_data[1]:
+            zx = json.loads(self.resPublic["zhongxin"])
+            tj = zx["mail_name"] and zx["mail_address"] and zx["mail_city"] and zx["mail_province"] and zx["mail_code"] and zx["mail_phone"]
+            if (zx["status"] == "Y" and zx.get("address")) or (zx["status"] == "N" and tj):
+                break
+
         zx = json.loads(self.resPublic["zhongxin"])
         if zx["status"] == "Y":
             self.Wait("thePage:SiteTemplate:theForm:j_id172:0")
