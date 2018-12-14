@@ -33,4 +33,4 @@ evus
 .history
 *.sql
 .vscode
-otherFile
+otherFile/*
