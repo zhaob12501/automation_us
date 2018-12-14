@@ -32,3 +32,5 @@ evus
 *.gif
 .history
 *.sql
+.vscode
+otherFile
