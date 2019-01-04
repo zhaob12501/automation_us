@@ -213,7 +213,7 @@ class UsPipeline(Mysql):
         # 线上使用条件
         sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
         # 测试使用条件
-        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 113"
+        sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 133"
         self.cur.execute(sql)
         resPublic = self.cur.fetchone()
         if not resPublic:

@@ -113,7 +113,7 @@ class AutoPay(AutoUs):
                     continue
                 elif "确保用户名和密码正确" in self.driver.page_source:
                     self.usPipe.uploadOrder(
-                        self.res["id"], ques="邮箱用户名或密码不正确", interview_status="0")
+                        self.res["id"], ques="邮箱用户名或密码不正确", interview_status="0", python_status="0")
                     return 1
                 else:
                     break
@@ -760,10 +760,12 @@ class AutoPay(AutoUs):
         # 指定护照/文件送达地址
         print("指定护照/文件送达地址")
         for pub in self.all_data[1]:
-            zx = json.loads(self.resPublic["zhongxin"])
+            zx = json.loads(pub["zhongxin"])
             tj = zx["mail_name"] and zx["mail_address"] and zx["mail_city"] and zx["mail_province"] and zx["mail_code"] and zx["mail_phone"]
             if (zx["status"] == "Y" and zx.get("address")) or (zx["status"] == "N" and tj):
                 break
+        else:
+            self.usPipe.uploadOrder(self.res["id"], ques="中信取件或邮寄信息未填写", interview_status="0", python_status="0")
 
         zx = json.loads(self.resPublic["zhongxin"])
         if zx["status"] == "Y":

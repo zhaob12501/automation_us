@@ -397,6 +397,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Group Name has not been completed.": "团队名称未填",
             "ZIP Code is invalid. Verify the format is correct.": "邮编无效",
             "The Visa Number that you have entered is invalid.": "签证号码请输入签证右下角显示为红色的8位数字。 如果您以前的签证是边境检票卡，请输入机读区第一行的最后12位数字。",
             "Date of Arrival in U.S. is invalid. Month, Day, and Year are required.": "到达日期有误",
@@ -795,7 +796,7 @@ class AllPage(AutoUs):
         else:
             ids.append((f"{self.baseID}FormView1_cbexAPP_TAX_ID_NA", ""))
 
-        self.waitIdSel(idlist=ids, seList=seList)
+        self.waitIdSel(idlist=ids, selist=seList)
 
         self.urlButton()
 
@@ -1612,6 +1613,8 @@ class AllPage(AutoUs):
     def workEducation1(self):
         """ 工作教育 """
         print("工作教育")
+        if not self.resWork["professional_types"]:
+            self.errJson(["工作教育信息未完成"], '工作教育:')
         over = False
         self.choiceSelect(f"{self.baseID}FormView1_ddlPresentOccupation", self.resWork["professional_types"])
         if self.resWork["professional_types"] == "N":
