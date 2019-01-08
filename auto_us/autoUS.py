@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-@Author: ZhaoBin 
-@Date: 2018-08-05 13:30:41 
-@Last Modified by:   ZhaoBin 
+@Author: ZhaoBin
+@Date: 2018-08-05 13:30:41
+@Last Modified by:   ZhaoBin
 @Last Modified time: 2018-08-08 17:00:41
 """
 import glob
@@ -72,24 +72,24 @@ class Base:
         # 设置浏览器窗口大小
         self.chrome_options.add_argument('window-size=800x3000')
         # for linux/*nix, download_dir="/usr/Public"
-        download_dir = os.path.join(BASEDIR, 'usFile') 
+        download_dir = os.path.join(BASEDIR, 'usFile')
         # ----------页面打印版pdf下载-----------------
-        appState = { 
-            "recentDestinations": [ 
-                { 
-                    "id": "Save as PDF", 
-                    "origin": "local" 
-                } 
-            ], 
-            "selectedDestinationId": "Save as PDF", 
-            "version": 2 
-        } 
+        appState = {
+            "recentDestinations": [
+                {
+                    "id": "Save as PDF",
+                    "origin": "local"
+                }
+            ],
+            "selectedDestinationId": "Save as PDF",
+            "version": 2
+        }
         # ----------网页版pdf直接下载-----------------
         profile = {
             "plugins.plugins_list": [{
                 "enabled": False, "name": "Chrome PDF Viewer"
             }],  # Disable Chrome's PDF Viewer
-            "download.default_directory": download_dir, 
+            "download.default_directory": download_dir,
             "download.extensions_to_open": "applications/pdf",
             'printing.print_preview_sticky_settings.appState': json.dumps(appState),
             'savefile.default_directory': download_dir
@@ -183,8 +183,9 @@ class Base:
             except Exception:
                 pass
         except Exception as e:
-            raise UsError(f"{e}\n{locator[0]}: {locator[1]}\n" +
-                          f"value : {text if text and text != NC else 'None'}\n\n")
+            raise UsError(
+                f"{e}\n{locator[0]}: {locator[1]}\n" + f"value : {text if text and text != NC else 'None'}\n\n"
+            )
         return 0
 
     def choiceSelect(self, selectid=None, value=None, t=0.2):
@@ -207,7 +208,7 @@ class Base:
 
     def waitIdSel(self, idlist=None, selist=None):
         """ 对 idlist 进行点击/发送字符串 或对 selist 进行选择
-            Returns: 
+            Returns:
                 [] 空列表
         """
         if idlist:
@@ -349,9 +350,9 @@ class AutoUs(Base):
                 rsp = self.getCaptcha(f'c_default_ctl00_sitecontentplaceholder_uclocation_identifycaptcha1_defaultcaptcha_CaptchaImage')
                 self.Wait(f'{self.baseID}ucLocation_IdentifyCaptcha1_txtCodeTextBox', rsp.pred_rsp.value)
                 self.Wait(f'{self.baseID}lnkRetrieve')
-                if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx": 
+                if self.driver.current_url == "https://ceac.state.gov/GenNIV/common/Recovery.aspx":
                     break
-            except Exception: 
+            except Exception:
                 pass
             sleep(2)
             if self.driver.current_url in self.usUrl:
@@ -377,7 +378,7 @@ class AutoUs(Base):
                 break
             sleep(1)
         else:
-            try: 
+            try:
                 self.Wait("ctl00_SiteContentPlaceHolder_ApplicationRecovery1_pnlSubmittedApp", text=NC)
                 self.usPipe.upload(self.resPublic["aid"], status="4")
                 return 1
@@ -397,6 +398,7 @@ class AutoUs(Base):
                 err (dict) 美签官网大部分错误信息的提示
         """
         err = {
+            "Language Name has not been completed.": "语言未填",
             "Group Name has not been completed.": "团队名称未填",
             "ZIP Code is invalid. Verify the format is correct.": "邮编无效",
             "The Visa Number that you have entered is invalid.": "签证号码请输入签证右下角显示为红色的8位数字。 如果您以前的签证是边境检票卡，请输入机读区第一行的最后12位数字。",
@@ -406,7 +408,7 @@ class AutoUs(Base):
             "Primary Phone Number accepts only numbers (0-9).": "主要电话只能为数字 0-9",
 
             "Present Employer or School Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), "
-            "apostrophe ('), ampersand (&) and single spaces in between names.": 
+            "apostrophe ('), ampersand (&) and single spaces in between names.":
             "公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格",
 
             "Primary Phone Number has not been completed.": "主要电话未填",
@@ -511,14 +513,19 @@ class AutoUs(Base):
             "Course of Study has not been completed.": "课程名未填",
             "Date of Attendance From is invalid. Month and Year are required.": "入学时间未填",
             "Date of Attendance To is invalid. Month and Year are required.": "毕业时间未填",
-            "Employer Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "公司名称只能为: A-Z, 0-9, -, \', & 和 空格",
+            "Employer Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.":
+                "公司名称只能为: A-Z, 0-9, -, \', & 和 空格",
+
             "The question \"Do you have any specialized skills or training, such as...?\" has not been answered.": "是否具有特殊技能/培训",
-            "Organization Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "组织名无效(与公司名要求一致)",
+            "Organization Name is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.":
+                "组织名无效(与公司名要求一致)",
+
             "The submitted photo did not meet the image quality requirements.": "照片不合格",
             "Unable to read image memory into DibImage.": "无法读取图像",
             "Telephone Number accepts only numbers (0-9).": "电话只能是数字 0-9",
             "Date is invalid.": "日期无效",
-            "Name of Institution is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.": "公司名或学校名只能为:(A-Z) 或 (0-9) 或 (') 或 (-) 或 (&)"
+            "Name of Institution is invalid. Only the following characters are valid for this field: A-Z, 0-9, hypen (-), apostrophe (\'), ampersand (&) and single spaces in between names.":
+                "公司名或学校名只能为:(A-Z) 或 (0-9) 或 (') 或 (-) 或 (&)"
         }
         return err
 
@@ -582,15 +589,15 @@ class AutoUs(Base):
         self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
         try:
             for infile in glob.glob(os.path.join(BASEDIR, 'usFile\\*.pdf')):
-                if "AppointmentConfirmation" in infile: 
+                if "AppointmentConfirmation" in infile:
                     continue
                 os.remove(infile)
         except Exception:
-            pass        
+            pass
         return 0
 
     def cos(self, s, school=1):
-        """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格 
+        """ 公司/学校名称只有以下字符对此字段有效：A-Z，0-9，(-)，撇号(')，符号(＆)和名称之间的单个空格
         电话只能为 0-9
         """
         if school:
@@ -637,7 +644,8 @@ class AllPage(AutoUs):
             "ReviewLocation": self.urlButton,
             "SignCertify": self.signCertify,
         }
-        if self.resPublic["inspect"] and self.getNode in ["ReviewPersonal", "ReviewTravel", "ReviewUSContact", "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity", "ReviewLocation", "SignCertify"]:
+        lls = ["ReviewPersonal", "ReviewTravel", "ReviewUSContact", "ReviewFamily", "ReviewWorkEducation", "ReviewSecurity", "ReviewLocation", "SignCertify"]
+        if self.resPublic["inspect"] and self.getNode in lls:
             self.usPipe.upload(self.resPublic["aid"], status=4, visa_status=3)
             return 1
 
@@ -733,10 +741,10 @@ class AllPage(AutoUs):
             if self.AAcode not in f.read():
                 f.write(',\n')
                 veri = [
-                    self.resPublic["id"], 
-                    self.AAcode, 
-                    self.resInfo["english_name"][:5], 
-                    self.resInfo['date_of_birth'].split('-')[0], 
+                    self.resPublic["id"],
+                    self.AAcode,
+                    self.resInfo["english_name"][:5],
+                    self.resInfo['date_of_birth'].split('-')[0],
                     self.answer
                 ]
                 json.dump(veri, f)
@@ -874,6 +882,13 @@ class AllPage(AutoUs):
 
         self.waitIdSel(idlist=ids, selist=seList)
         self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", re.sub(r"[。、]", ".", self.resInfo['home_email']))
+        email_value = self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", text=NC).get_attribute("value")
+        print(email_value, re.sub(r"[。、]", ".", self.resInfo['home_email']))
+        for _ in range(5):
+            if self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", text=NC).get_attribute("value") != re.sub(r"[。、]", ".", self.resInfo['home_email']):
+                self.Wait(f"{self.baseID}FormView1_tbxAPP_EMAIL_ADDR", re.sub(r"[。、]", ".", self.resInfo['home_email']))
+            else :
+                break
         self.urlButton()
 
         while True:
@@ -1046,7 +1061,7 @@ class AllPage(AutoUs):
         ]
         ids = self.waitIdSel(ids)
         if self.resPublic['travel_cost_pay'] == 'O':
-            try: 
+            try:
                 self.Wait(f"{self.baseID}FormView1_tbxPayerSurname", self.resPublic['pay_personal_name'])
             except Exception:
                 sel.select_by_index(0)
@@ -1178,7 +1193,7 @@ class AllPage(AutoUs):
             self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_1")
         elif self.resPublic["old_stay_is"] == 'Y':
             self.Wait(f"{self.baseID}FormView1_rblPREV_US_TRAVEL_IND_0")
-            """ 
+            """
             {"arrived":[{"arrived_time":"2004-10-12","time":"12","times":"\u5929"},{"arrived_time":"2004-10-13","time":"12","times":"\u5929"}]}
              """
             stay_info = json.loads(self.resPublic["old_stay_info"]).get("arrived")
@@ -1453,7 +1468,9 @@ class AllPage(AutoUs):
             "D": self.prevSpouse,
         }
         node = self.getNode
-        if self.resInfo["marriage"] in ["S", "O"] or (self.resInfo["marriage"] in ["M", "C", "P", "L"] and node != "Spouse") or (self.resInfo["marriage"] == "W" and node != "DeceasedSpouse") or (self.resInfo["marriage"] == "D" and node != "PrevSpouse"):
+        pd = self.resInfo["marriage"] in ["S", "O"] or (self.resInfo["marriage"] in ["M", "C", "P", "L"] and node != "Spouse") or \
+            (self.resInfo["marriage"] == "W" and node != "DeceasedSpouse") or (self.resInfo["marriage"] == "D" and node != "PrevSpouse")
+        if pd:
             self.driver.get("https://ceac.state.gov/GenNIV/General/complete/complete_personal.aspx?node=Personal1")
             self.choiceSelect("ctl00_SiteContentPlaceHolder_FormView1_ddlAPP_MARITAL_STATUS", self.resInfo["marriage"])
             if self.resInfo["marriage"] == "O":
@@ -2009,95 +2026,95 @@ class AllPage(AutoUs):
         # ids1 = [
         #     (f"{self.baseID}FormView1_rblDisease_1", ""),
         #     # (f"{self.baseID}FormView1_rblDisease_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxDisease", "")            
+        #     # (f"{self.baseID}FormView1_tbxDisease", "")
         #     (f"{self.baseID}FormView1_rblDisorder_1", ""),
         #     # (f"{self.baseID}FormView1_rblDisorder_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxDisorder", "")            
+        #     # (f"{self.baseID}FormView1_tbxDisorder", "")
         #     (f"{self.baseID}FormView1_rblDruguser_1", ""),
         #     # (f"{self.baseID}FormView1_rblDruguser_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxDruguser", "")            
+        #     # (f"{self.baseID}FormView1_tbxDruguser", "")
         #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids2 = [
         #     (f"{self.baseID}FormView1_rblArrested_1", ""),
         #     # (f"{self.baseID}FormView1_rblArrested_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxArrested", "")            
+        #     # (f"{self.baseID}FormView1_tbxArrested", "")
         #     (f"{self.baseID}FormView1_rblControlledSubstances_1", ""),
         #     # (f"{self.baseID}FormView1_rblControlledSubstances_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxControlledSubstances", "")            
+        #     # (f"{self.baseID}FormView1_tbxControlledSubstances", "")
         #     (f"{self.baseID}FormView1_rblProstitution_1", ""),
         #     # (f"{self.baseID}FormView1_rblProstitution_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxProstitution", "")            
+        #     # (f"{self.baseID}FormView1_tbxProstitution", "")
         #     (f"{self.baseID}FormView1_rblMoneyLaundering_1", ""),
         #     # (f"{self.baseID}FormView1_rblMoneyLaundering_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")            
+        #     # (f"{self.baseID}FormView1_tbxMoneyLaundering", "")
         #     (f"{self.baseID}FormView1_rblHumanTrafficking_1", ""),
         #     # (f"{self.baseID}FormView1_rblHumanTrafficking_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")            
+        #     # (f"{self.baseID}FormView1_tbxHumanTrafficking", "")
         #     (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_1", ""),
         #     # (f"{self.baseID}FormView1_rblAssistedSevereTrafficking_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")            
+        #     # (f"{self.baseID}FormView1_tbxAssistedSevereTrafficking", "")
         #     (f"{self.baseID}FormView1_rblHumanTraffickingRelated_1", ""),
         #     # (f"{self.baseID}FormView1_rblHumanTraffickingRelated_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")            
+        #     # (f"{self.baseID}FormView1_tbxHumanTraffickingRelated", "")
         #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids3 = [
         #     (f"{self.baseID}FormView1_rblIllegalActivity_1", ""),
         #     # (f"{self.baseID}FormView1_rblIllegalActivity_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxIllegalActivity", "")            
+        #     # (f"{self.baseID}FormView1_tbxIllegalActivity", "")
         #     (f"{self.baseID}FormView1_rblTerroristActivity_1", ""),
         #     # (f"{self.baseID}FormView1_rblTerroristActivity_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxTerroristActivity", "")            
+        #     # (f"{self.baseID}FormView1_tbxTerroristActivity", "")
         #     (f"{self.baseID}FormView1_rblTerroristSupport_1", ""),
         #     # (f"{self.baseID}FormView1_rblTerroristSupport_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxTerroristSupport", "")            
+        #     # (f"{self.baseID}FormView1_tbxTerroristSupport", "")
         #     (f"{self.baseID}FormView1_rblTerroristOrg_1", ""),
         #     # (f"{self.baseID}FormView1_rblTerroristOrg_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxTerroristOrg", "")            
+        #     # (f"{self.baseID}FormView1_tbxTerroristOrg", "")
         #     (f"{self.baseID}FormView1_rblGenocide_1", ""),
         #     # (f"{self.baseID}FormView1_rblGenocide_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxGenocide", "")            
+        #     # (f"{self.baseID}FormView1_tbxGenocide", "")
         #     (f"{self.baseID}FormView1_rblTorture_1", ""),
         #     # (f"{self.baseID}FormView1_rblTorture_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxTorture", "")            
+        #     # (f"{self.baseID}FormView1_tbxTorture", "")
         #     (f"{self.baseID}FormView1_rblExViolence_1", ""),
         #     # (f"{self.baseID}FormView1_rblExViolence_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxExViolence", "")            
+        #     # (f"{self.baseID}FormView1_tbxExViolence", "")
         #     (f"{self.baseID}FormView1_rblChildSoldier_1", ""),
         #     # (f"{self.baseID}FormView1_rblChildSoldier_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxChildSoldier", "")            
+        #     # (f"{self.baseID}FormView1_tbxChildSoldier", "")
         #     (f"{self.baseID}FormView1_rblReligiousFreedom_1", ""),
         #     # (f"{self.baseID}FormView1_rblReligiousFreedom_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")            
+        #     # (f"{self.baseID}FormView1_tbxReligiousFreedom", "")
         #     (f"{self.baseID}FormView1_rblPopulationControls_1", ""),
         #     # (f"{self.baseID}FormView1_rblPopulationControls_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxPopulationControls", "")            
+        #     # (f"{self.baseID}FormView1_tbxPopulationControls", "")
         #     (f"{self.baseID}FormView1_rblTransplant_1", ""),
         #     # (f"{self.baseID}FormView1_rblTransplant_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxTransplant", "")            
+        #     # (f"{self.baseID}FormView1_tbxTransplant", "")
         #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids4 = [
         #     (f"{self.baseID}FormView1_rblImmigrationFraud_1", ""),
         #     # (f"{self.baseID}FormView1_rblImmigrationFraud_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")            
+        #     # (f"{self.baseID}FormView1_tbxImmigrationFraud", "")
         #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
         # ids5 = [
         #     (f"{self.baseID}FormView1_rblChildCustody_1", ""),
         #     # (f"{self.baseID}FormView1_rblChildCustody_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxChildCustody", "")            
+        #     # (f"{self.baseID}FormView1_tbxChildCustody", "")
         #     (f"{self.baseID}FormView1_rblVotingViolation_1", ""),
         #     # (f"{self.baseID}FormView1_rblVotingViolation_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxVotingViolation", "")            
+        #     # (f"{self.baseID}FormView1_tbxVotingViolation", "")
         #     (f"{self.baseID}FormView1_rblRenounceExp_1", ""),
         #     # (f"{self.baseID}FormView1_rblRenounceExp_0", ""),
-        #     # (f"{self.baseID}FormView1_tbxRenounceExp", "")            
+        #     # (f"{self.baseID}FormView1_tbxRenounceExp", "")
         #     (f"{self.baseID}UpdateButton3", ""),
         # ]
 
@@ -2185,11 +2202,11 @@ class AllPage(AutoUs):
                 self.Wait(f"{self.baseID}CodeTextBox", rsp.pred_rsp.value)
                 self.Wait(f"{self.baseID}btnSignApp")
                 sleep(2)
-                if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source: 
+                if "You have successfully" in self.driver.page_source and "sign your application:" not in self.driver.page_source:
                     break
                 else:
                     Captcha(4, rsp=rsp)
-            except Exception: 
+            except Exception:
                 pass
 
         self.urlButton()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author: ZhaoBin
-@file: pipelines.py 
+@file: pipelines.py
 Created on 2018/5/8 12:00
 """
 import sys
@@ -213,7 +213,7 @@ class UsPipeline(Mysql):
         # 线上使用条件
         sql = "SELECT * FROM dc_business_america_public_eng WHERE status = 2"
         # 测试使用条件
-        sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 133"
+        # sql = "SELECT * FROM dc_business_america_public_eng WHERE aid = 133"
         self.cur.execute(sql)
         resPublic = self.cur.fetchone()
         if not resPublic:
@@ -253,8 +253,8 @@ class UsPipeline(Mysql):
             raise UsError('未传 aid 或者 aaCode/status 无值')
 
         apeSql = ', '.join(
-            [f'ape.{key}="{val}"' for key, val in kwargs.items()])
-        apSql = ', '.join([f'ap.{key}="{val}"' for key, val in kwargs.items()])
+            [f'ape.`{key}`="{val}"' for key, val in kwargs.items()])
+        apSql = ', '.join([f'ap.`{key}`="{val}"' for key, val in kwargs.items()])
 
         sql = f'''UPDATE dc_business_america_public_eng AS ape, dc_business_america_public AS ap SET {apeSql}, {apSql} WHERE  ape.aid = {aid} AND  ap.aid = {aid}'''
         print(kwargs.get("progress"))
@@ -269,10 +269,10 @@ class UsPipeline(Mysql):
 
     def selDBOrder(self, usql=None):
         """ 预约表查询 """
-        sql = "SELECT * FROM dc_business_america_order WHERE interview_status=4 or python_status=1"
+        sql = "SELECT * FROM dc_business_america_order WHERE interview_status=4 or python_status=1 or `replace`!=0"
         sql = sql if not usql else usql
         # 测试
-        # sql = "SELECT * FROM dc_business_america_order WHERE id=82"
+        # sql = "SELECT * FROM dc_business_america_order WHERE id=94"
         self.cur.execute(sql)
         res = self.cur.fetchone()
         if res:
@@ -308,7 +308,7 @@ class UsPipeline(Mysql):
         """
         if not (ids and kwargs):
             raise UsError("数据库修改值不能为空")
-        cSql = ', '.join([f"{key}='{val}'" for key, val in kwargs.items()])
+        cSql = ', '.join([f"`{key}`='{val}'" for key, val in kwargs.items()])
         sql = f'UPDATE dc_business_america_order SET {cSql} WHERE id = "{ids}"'
         try:
             self.cur.execute(sql)
@@ -322,7 +322,7 @@ class UsPipeline(Mysql):
         """ 更新可预约时间表 """
         if not (activity and kwargs):
             raise UsError("数据库修改值不能为空")
-        cSql = ', '.join([f"{key}='{val}'" for key, val in kwargs.items()])
+        cSql = ', '.join([f"`{key}`='{val}'" for key, val in kwargs.items()])
         if kwargs.get("interview_days"):
             cSql += f', utime={int(time())}'
         if kwargs.get("replace_interview_days"):

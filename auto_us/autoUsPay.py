@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from time import mktime, sleep, strptime, time
 
@@ -7,7 +8,7 @@ from PIL import Image
 
 from .autoUS import EC, AutoUs, Select, WebDriverWait
 from .fateadm import Captcha
-from .settings import MON, MON_ANTI, NC, PASSWD
+from .settings import BASEDIR, MON, MON_ANTI, NC, PASSWD
 
 
 class AutoPay(AutoUs):
@@ -526,7 +527,7 @@ class AutoPay(AutoUs):
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
                     self.Wait(
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
-                    with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+                    with open(os.path.join(BASEDIR, "usFile/AppointmentConfirmation.pdf"), "rb") as f:
                         file = {"file": ("AppointmentConfirmation.pdf",
                                          f.read(), "application/pdf")}
                     url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
@@ -552,7 +553,7 @@ class AutoPay(AutoUs):
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
                     self.Wait(
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
-                    with open("./usFile/AppointmentConfirmation.pdf", "rb") as f:
+                    with open(os.path.join(BASEDIR, "usFile/AppointmentConfirmation.pdf"), "rb") as f:
                         file = {"file": ("AppointmentConfirmation.pdf",
                                          f.read(), "application/pdf")}
                     url = "https://www.mobtop.com.cn/index.php?s=/Business/Pcapi/insertlogoapi"
@@ -619,16 +620,54 @@ class AutoPay(AutoUs):
         self.receipt()
         self.driver.quit()
 
+    @property
+    def all_users(self):
+        # self.Wait(css=".ui-icon-close:nth-child(1)")
+        # self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
+        self.Wait(css="#summary", text=NC)
+        return self.driver.find_elements_by_css_selector("#summary>ul>li")
+
+    # 删除用户
+    def del_user(self, idNu):
+        for i in self.all_users:
+            if idNu == i.find_element_by_css_selector('.nationalId').text:
+                i.find_element_by_css_selector(".ui-icon-close").click()
+                self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
+                return 1
+
+    # 更新 AAcode
+    def up_user(self, idNu, AAcode):
+        for i in self.all_users:
+            if idNu == i.find_element_by_css_selector('.nationalId').text:
+                if AAcode != i.find_element_by_css_selector(".ds160").text:
+                    self.Wait(xpath='//*[@id="summary"]/ul/li[1]/div[2]/span')
+                    self.Wait(css=".requiredInput > .formDs160", text=AAcode)
+                    self.Wait(xpath='/html/body/div[3]/div[11]/div/button[1]/span')
+                return 1
+
     def add_user(self):
         self.Wait(css="#summary", text=NC)
-        lis = self.driver.find_elements_by_css_selector("#summary > ul > li")
-        for _ in range(len(lis)):
-            self.Wait(css=".ui-icon-close:nth-child(1)")
-            self.Wait(xpath='/html/body/div[7]/div[3]/div/button[1]/span')
+        lis = self.driver.find_elements_by_css_selector("#summary>ul>li")
+        del_users = []
+        has_users = []
+        idNus = [i["identity_number"] for i in self.all_data[2]]
+        aacodes = [a["aacode"] for a in self.all_data[1]]
+        # 查看已有用户 更新AAcode
+        for i in lis:
+            idNu = i.find_element("xpath", ".//span[@class='nationalId']").text
+            if idNu not in idNus:
+                del_users.append(idNu)
+            else:
+                has_users.append((idNu, aacodes[idNus.index(idNu)]))
+
+        [self.del_user(i) for i in del_users]
+        [self.up_user(*i) for i in has_users]
 
         for i in range(len(self.all_data[2])):
-            pub = self.all_data[1][i]
             info = self.all_data[2][i]
+            if info["identity_number"] in list(zip(*has_users))[0]:
+                continue
+            pub = self.all_data[1][i]
             work = self.all_data[3][i]
             user = (pub, info, work)
             try:
@@ -827,7 +866,7 @@ class AutoPay(AutoUs):
             self.Wait(css='dd > span > input', text=code)
             self.Wait(css='input.continue')
         else:
-            print("返回付款编号")
+            
             try:
                 wait = WebDriverWait(self.driver, 2, 0.1)
                 locator = ('xpath', '/html/body/div[2]/div[3]/div/button/span')
@@ -836,16 +875,24 @@ class AutoPay(AutoUs):
                 sleep(1)
             try:
                 wait = WebDriverWait(self.driver, 2, 0.1)
-                locator = (
-                    'xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
+                locator = ('xpath', '//span[text()="使用现有收据"]')
                 wait.until(EC.presence_of_element_located(locator)).click()
+                sleep(1)
             except Exception:
-                pass
-            try:
-                self.Wait(css="body>div:nth-child(8) button")
-            except Exception:
-                pass
-
+                sleep(1)
+            else:
+                try:
+                    wait = WebDriverWait(self.driver, 2, 0.1)
+                    locator = (
+                        'xpath', '/html/body/div[4]/div[3]/div/button[1]/span')
+                    wait.until(EC.presence_of_element_located(locator)).click()
+                except Exception:
+                    pass
+                try:
+                    self.Wait(css="body>div:nth-child(8) button")
+                except Exception:
+                    pass
+            print("返回付款编号")
             receipt = self.Wait(css="dd>span", text=NC)
             if receipt.text.strip():
                 return 0
@@ -871,23 +918,27 @@ class AutoPay(AutoUs):
 
     # 预约查询
     def selApp(self, cancel=False):
-        if self.history():
+        success_status = False
+        if not cancel and self.history():
             return 1
         # self.driver.get("https://cgifederal.secure.force.com/ApplicantHome")
-        self.Wait(
-            css='#nav_side > div > ul > span:nth-child(1) > li:nth-child(2) > a')
-        trs = self.driver.find_elements_by_xpath('//table[1]//tr')[1:]
+        self.Wait(css='#nav_side>div>ul>span:nth-child(1)>li:nth-child(2)>a')
         for i in range(len(self.all_data[2])):
             info = self.all_data[2][i]
+            self.Wait(xpath='//table[1]//tr', text=NC)
+            trs = self.driver.find_elements_by_xpath('//table[1]//tr')[1:]
             for tr in trs:
-                if f'{info["english_name_s"]} {info["english_name"]}' in tr.text and "*Updated*" in tr.text:
-                    # 撤销
+                conditions = info["passport_number"] in tr.text and f'{info["english_name_s"]} {info["english_name"]}' in tr.text and "*Updated*" in tr.text
+                if conditions:
+                    tr.find_element_by_xpath("./td/nav/ul/li[1]/a").click()
                     if cancel == 1:
-                        tr.find_element_by_xpath(".//li//ul/li[2]/a").click()
-
+                        # 取消预约
+                        tr.find_element_by_xpath("./td/nav/ul/li/ul/li[5]/a").click()
+                        self.Wait(xpath="//span[text()='Yes']")
                     elif cancel:
-                        tr.find_element_by_xpath(".//li//ul/li[5]/a").click()
+                        tr.find_element_by_xpath("./td/nav/ul/li/ul/li[2]/a").click()
                         if cancel == 3:
+                            # 获取改期时间
                             times = self.driver.find_element_by_xpath(
                                 '//table[@role="presentation"]').text.split('\n')
                             date_times = {}
@@ -901,10 +952,11 @@ class AutoPay(AutoUs):
                                     date_times[day].append(ti)
                             dates = '|'.join(
                                 [f"{i}&{','.join(date_times[i])}" for i in date_times])
-                            self.usPipe.uploadDays(
-                                info["activity"], replace_interview_days=dates)
-
+                            self.usPipe.uploadDays(info["activity"], replace_interview_days=dates)
+                            self.usPipe.uploadOrder(self.res["id"], replace='0')
+                            return 1
                         elif cancel == 2 and self.res["interview_time"]:
+                            # 改期
                             userDate = json.loads(self.res["interview_time"])
                             userDateDay = userDate["day"].split('-')
                             userDateDay[1] = f"{userDateDay[1]:0>2}"
@@ -915,18 +967,27 @@ class AutoPay(AutoUs):
                                 "./input").click for td in tds if date and userDate["t"] in td.find_element_by_xpath("./lable").text]
                             self.driver.find_element_by_xpath(
                                 '/html/body/div[3]/div[3]/div/button[1]/span').click()
-
-                    tds = tr.text.split("\n")
-                    _, month, day, year = tds[0].split(' ')
-                    success_time = f"{year}-{MON_ANTI[month]}-{day} {tds[1]}"
-                    self.usPipe.uploadOrder(
-                        self.res["id"], interview_status=6, python_status=0, interview_success=success_time)
-                    return 1
-
-        if cancel == 1:
-            self.usPipe.uploadOrder(
-                self.res["id"], interview_status=9, replace=0, interview_success=None)
+                    else:
+                        tds = tr.text.split("\n")
+                        _, month, day, year = tds[0].split(' ')
+                        success_time = f"{year}-{MON_ANTI[month]}-{day} {tds[1]}"
+                        self.usPipe.uploadOrder(
+                            self.res["id"], interview_status=6, replace=0,
+                            python_status=0, interview_success=success_time
+                        )
+                        success_status = True
+                    break
+                pass
+            pass
+        if success_status:
             return 1
+        if cancel == 1:
+            self.usPipe.uploadOrder(self.res["id"], interview_status=9, replace=0, interview_success=None)
+            return 1
+        elif cancel == 2:
+            self.usPipe.uploadOrder(self.res["id"], interview_status=6, replace=0, interview_success=None)
+            return 1
+            
         self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)',
                   text=f'{self.resInfo["english_name_s"]} {self.resInfo["english_name"]}')
         self.Wait(
@@ -965,7 +1026,7 @@ class AutoPay(AutoUs):
                     return 1
         return 0
 
-    # =- 预约入口 -= #
+    # =- 调解员 预约入口 -= #
     def group_pay_over(self, rob=0):
         if self.groupLogin():
             return
