@@ -479,7 +479,7 @@ class AutoPay(AutoUs):
         self.usPipe.uploadOrder(self.res["id"], python_status=0)
         return data
 
-    # 预约 / 抢预约
+    # 预约 / 抢预约 最后一步
     def reservation(self, data):
         """ 预约: {"day":"30-10-2018","t":"08:30"}
         抢预约: {"day":"22-11-2018,23-11-2018","z":"2018-11-25"} """
@@ -524,9 +524,14 @@ class AutoPay(AutoUs):
                         f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{t}")]').text
                     self.Wait("thePage:SiteTemplate:theForm:addItem")
                     self.Wait(
-                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
-                    self.Wait(
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
+                    sleep(3)
+                    try:
+                        self.Wait(
+                            xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
+                    except Exception:
+                        pass
+                    sleep(1)
                     with open(os.path.join(BASEDIR, "usFile/AppointmentConfirmation.pdf"), "rb") as f:
                         file = {"file": ("AppointmentConfirmation.pdf",
                                          f.read(), "application/pdf")}
@@ -550,9 +555,14 @@ class AutoPay(AutoUs):
                         f'//*[@id="myCalendarTable"]/tbody//td[contains(text(),"{MON[mo]} {int(d)}")]/preceding-sibling::td[2]').text
                     self.Wait("thePage:SiteTemplate:theForm:addItem")
                     self.Wait(
-                        xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
-                    self.Wait(
                         xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[3]/a')
+                    sleep(3)
+                    try:
+                        self.Wait(
+                            xpath='//*[@id="j_id0:SiteTemplate:j_id107:j_id109"]/table/tbody/tr[4]/td/table/tbody/tr/td[1]/a')
+                    except Exception:
+                        pass
+                    sleep(1)
                     with open(os.path.join(BASEDIR, "usFile/AppointmentConfirmation.pdf"), "rb") as f:
                         file = {"file": ("AppointmentConfirmation.pdf",
                                          f.read(), "application/pdf")}
@@ -572,6 +582,7 @@ class AutoPay(AutoUs):
             self.getDates(1)
         return 0
 
+    # 预约
     def appointment(self, data=None):
         if not data:
             if self.id != self.res["id"]:
@@ -970,7 +981,7 @@ class AutoPay(AutoUs):
                     else:
                         tds = tr.text.split("\n")
                         _, month, day, year = tds[0].split(' ')
-                        success_time = f"{year}-{MON_ANTI[month]}-{day} {tds[1]}"
+                        success_time = f"{year}-{MON_ANTI[month]:0>2}-{day:0>2} {tds[1]}"
                         self.usPipe.uploadOrder(
                             self.res["id"], interview_status=6, replace=0,
                             python_status=0, interview_success=success_time
@@ -982,12 +993,12 @@ class AutoPay(AutoUs):
         if success_status:
             return 1
         if cancel == 1:
-            self.usPipe.uploadOrder(self.res["id"], interview_status=9, replace=0, interview_success=None)
+            self.usPipe.uploadOrder(self.res["id"], interview_status=9, replace=0, interview_success="")
             return 1
         elif cancel == 2:
-            self.usPipe.uploadOrder(self.res["id"], interview_status=6, replace=0, interview_success=None)
+            self.usPipe.uploadOrder(self.res["id"], interview_status=6, replace=0, interview_success="")
             return 1
-            
+
         self.Wait(css='#dashboard > span > form > input[type="text"]:nth-child(2)',
                   text=f'{self.resInfo["english_name_s"]} {self.resInfo["english_name"]}')
         self.Wait(
